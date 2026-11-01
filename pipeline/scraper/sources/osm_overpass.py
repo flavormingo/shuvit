@@ -14,7 +14,7 @@ HOUSTON_BBOX = (29.5, -95.8, 30.1, -95.0)
 RETRY_ATTEMPTS = 3
 SKATEBOARD_SPORT = '"sport"~"(^|;)skateboard(;|$)"'
 NON_PARK_TAGS = ("shop", "office", "craft", "club")
-NON_PARK_NAME = re.compile(r"\b(skate|board)\s*shop\b", re.IGNORECASE)
+NON_PARK_NAME = re.compile(r"(skate|board)\s*shop\b", re.IGNORECASE)
 
 
 class OverpassError(Exception):

@@ -217,3 +217,8 @@ def test_unavailable_overpass_stops_queries_but_keeps_cached_tiles(tmp_path):
     assert DownSource.calls == 1
     assert [p.source_id for p in parks] == ["cached"]
     assert len(fetcher.failed_tiles) == len(tiles) - 1
+
+
+def test_skateboard_shop_name_is_rejected():
+    assert not is_park({"name": "Overcast Skateboard Shop", "sport": "skateboard"})
+    assert is_park({"name": "Workshop Skatepark", "leisure": "skatepark"})
