@@ -16,18 +16,14 @@ final class MapViewModel {
     private var lastFetchWasTruncated = false
     private var fetchTask: Task<Void, Never>?
 
-    /// Load parks for what's on screen, unless search results are being shown.
     func loadVisible(region: MKCoordinateRegion) {
         guard !isShowingSearchResults else { return }
 
         let visible = Bounds(region: region)
-        // Moving around inside an area we already have needs no new request. If the
-        // last result hit the limit, zooming in can reveal parks that were cut off.
         if let fetchedBounds, !lastFetchWasTruncated, fetchedBounds.contains(visible) {
             return
         }
 
-        // Fetch a little beyond the screen so small pans don't refetch.
         let padded = Bounds(region: region, scale: 1.3)
         fetchTask?.cancel()
         fetchTask = Task {
@@ -62,7 +58,6 @@ final class MapViewModel {
         }
     }
 
-    /// Show matching parks and return a region that fits them.
     func search(query: String) async -> MKCoordinateRegion? {
         fetchTask?.cancel()
         isLoading = true
@@ -80,7 +75,6 @@ final class MapViewModel {
         }
     }
 
-    /// Leave search and go back to showing what's on screen.
     func clearSearch(region: MKCoordinateRegion?) {
         isShowingSearchResults = false
         errorMessage = nil
@@ -109,7 +103,6 @@ final class MapViewModel {
     }
 }
 
-/// A map viewport. `west` is greater than `east` when it crosses the antimeridian.
 private struct Bounds {
     let south: Double
     let west: Double
@@ -142,7 +135,6 @@ private struct Bounds {
 
     func contains(_ other: Bounds) -> Bool {
         guard south <= other.south, north >= other.north else { return false }
-        // Crossing viewports are rare, so refetching for them is fine.
         guard !crossesAntimeridian, !other.crossesAntimeridian else { return false }
         return west <= other.west && east >= other.east
     }

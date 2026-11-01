@@ -8,13 +8,13 @@ class Settings(BaseSettings):
     RESEND_FROM_EMAIL: str = "Shuvit <noreply@shuvit.app>"
     JWT_SECRET: str = "change-me-to-a-64-char-random-string"
     JWT_ALGORITHM: str = "HS256"
-    JWT_EXPIRE_MINUTES: int = 10080  # 7 days
+    JWT_EXPIRE_MINUTES: int = 7 * 24 * 60
     BASE_URL: str = "https://api.shuvit.app"
     MEDIA_DIR: str = "./media_uploads"
-    ADMIN_EMAILS: str = ""  # comma-separated
+    ADMIN_EMAILS: str = ""
     CORS_ORIGINS: str = "https://shuvit.app,https://www.shuvit.app"
-    MAX_IMAGE_SIZE: int = 20 * 1024 * 1024  # 20 MB
-    MAX_VIDEO_SIZE: int = 50 * 1024 * 1024  # 50 MB; keep nginx client_max_body_size above this
+    MAX_IMAGE_SIZE: int = 20 * 1024 * 1024
+    MAX_VIDEO_SIZE: int = 50 * 1024 * 1024
     MAGIC_LINK_EXPIRE_MINUTES: int = 15
     MAGIC_LINK_RATE_LIMIT_SECONDS: int = 60
 

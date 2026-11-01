@@ -34,7 +34,6 @@ struct MediaItem: Codable, Identifiable, Hashable {
     }
 }
 
-/// A submission waiting for an admin, or approved media that someone reported.
 struct ReviewItem: Codable, Identifiable {
     let id: UUID
     let parkId: UUID

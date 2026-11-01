@@ -1,6 +1,4 @@
 #!/bin/bash
-# Nightly Shuvit backup. Runs on the VPS from shuvit-backup.timer.
-# Writes the database, uploaded media and the env file to /var/backups/shuvit.
 set -euo pipefail
 umask 077
 
@@ -11,7 +9,6 @@ STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 mkdir -p "$BACKUP_DIR"
 cd /tmp
 
-# Write to a temp name and rename, so a failed run never looks like a good backup.
 sudo -u postgres pg_dump -Fc shuvit > "$BACKUP_DIR/.db-$STAMP.tmp"
 mv "$BACKUP_DIR/.db-$STAMP.tmp" "$BACKUP_DIR/db-$STAMP.dump"
 

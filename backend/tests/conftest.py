@@ -21,23 +21,22 @@ os.environ.update(
     MAGIC_LINK_RATE_LIMIT_SECONDS="0",
 )
 
-import pytest  # noqa: E402
-import pytest_asyncio  # noqa: E402
-import resend  # noqa: E402
-from httpx import ASGITransport, AsyncClient  # noqa: E402
-from sqlalchemy import text  # noqa: E402
+import pytest
+import pytest_asyncio
+import resend
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy import text
 
-from app.config import settings  # noqa: E402
-from app.database import async_session  # noqa: E402
-from app.main import app  # noqa: E402
-from app.redis import get_redis  # noqa: E402
+from app.config import settings
+from app.database import async_session
+from app.main import app
+from app.redis import get_redis
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 
 
 @pytest.fixture(scope="session", autouse=True)
 def migrated_database():
-    # Runs every migration, so a broken one fails the suite.
     for args in (["downgrade", "base"], ["upgrade", "head"]):
         subprocess.run(
             [sys.executable, "-m", "alembic", *args],

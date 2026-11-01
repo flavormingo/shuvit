@@ -234,7 +234,6 @@ async def report_media(
     if not row:
         return False
 
-    # A repeat report from the same user changes nothing and sends no second email.
     inserted = await db.execute(
         insert(MediaReport)
         .values(id=uuid.uuid4(), media_id=media_id, reporter_id=reporter_id, reason=reason)

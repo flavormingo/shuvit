@@ -22,12 +22,12 @@ class MediaSubmission(Base):
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
-    media_type: Mapped[str] = mapped_column(String(16), nullable=False)  # image/video
+    media_type: Mapped[str] = mapped_column(String(16), nullable=False)
     file_url: Mapped[str] = mapped_column(String(512), nullable=False)
     thumbnail_url: Mapped[str | None] = mapped_column(String(512))
     description: Mapped[str | None] = mapped_column(Text)
     tags: Mapped[list[str] | None] = mapped_column(ARRAY(String))
-    status: Mapped[str] = mapped_column(String(16), default="pending")  # pending/approved/rejected
+    status: Mapped[str] = mapped_column(String(16), default="pending")
     reviewed_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")
     )

@@ -19,29 +19,23 @@ struct ParkDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                // Hero / Map header
                 mapHeader
 
                 VStack(alignment: .leading, spacing: 20) {
-                    // Title + actions
                     titleSection
 
-                    // Info chips
                     if let park = viewModel.park {
                         infoSection(park)
                     }
 
-                    // Features
                     if let park = viewModel.park {
                         featuresSection(park)
                     }
 
-                    // Hours
                     if let park = viewModel.park {
                         hoursSection(park)
                     }
 
-                    // Description
                     if let desc = viewModel.park?.description, !desc.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("About")
@@ -52,7 +46,6 @@ struct ParkDetailView: View {
                         }
                     }
 
-                    // Address
                     if let address = viewModel.park?.address, !address.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Address")
@@ -63,12 +56,10 @@ struct ParkDetailView: View {
                         }
                     }
 
-                    // Media Gallery
                     if let media = viewModel.park?.media, !media.isEmpty {
                         mediaSection(media)
                     }
 
-                    // Submit media button
                     Button {
                         if AuthManager.shared.isAuthenticated {
                             showingMediaSubmit = true

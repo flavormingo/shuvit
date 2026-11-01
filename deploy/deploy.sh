@@ -1,18 +1,8 @@
 #!/bin/bash
-# Deploy Shuvit to the VPS. Run from the repo root.
-# Usage: bash deploy/deploy.sh [ssh-host]
-#
-# The default host is an alias in ~/.ssh/config:
-#   Host shuvit-vps
-#     HostName 209.74.85.177
-#     Port 22022
-#     User root
-#     IdentityFile ~/.ssh/shuvit_vps
 set -euo pipefail
 
 VPS_HOST="${1:-shuvit-vps}"
 REMOTE_DIR="/opt/shuvit"
-# /health doesn't touch the database, so check an endpoint that does.
 HEALTH_URL="https://api.shuvit.app/api/v1/parks?limit=1"
 
 RSYNC_EXCLUDES=(

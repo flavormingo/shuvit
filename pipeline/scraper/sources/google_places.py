@@ -30,9 +30,8 @@ class GooglePlacesSource(Source):
             return []
 
         if bbox is None:
-            # Houston center
             center_lat, center_lng = 29.7604, -95.3698
-            radius = 50000  # 50km
+            radius = 50000
         else:
             south, west, north, east = bbox
             center_lat = (south + north) / 2
@@ -47,7 +46,7 @@ class GooglePlacesSource(Source):
         next_page_token = None
 
         async with httpx.AsyncClient(timeout=30) as client:
-            for page in range(3):  # max 3 pages (60 results)
+            for page in range(3):
                 params = {
                     "key": self.api_key,
                     "keyword": "skatepark",
@@ -85,7 +84,6 @@ class GooglePlacesSource(Source):
                 if not next_page_token:
                     break
 
-                # Google requires a short delay before using next_page_token
                 import asyncio
                 await asyncio.sleep(2)
 

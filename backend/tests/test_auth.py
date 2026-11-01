@@ -33,7 +33,6 @@ async def test_code_locks_after_five_wrong_guesses(client, sent_emails):
         response = await client.post("/auth/verify-otp", json={"email": "a@example.com", "code": wrong})
         assert response.status_code == 400
 
-    # Even the right code is refused now.
     response = await client.post("/auth/verify-otp", json={"email": "a@example.com", "code": code})
     assert response.status_code == 400
 
@@ -58,7 +57,6 @@ async def test_codes_per_email_are_capped_per_hour(client, sent_emails):
 
 
 async def test_verify_is_rate_limited_per_ip(client, sent_emails):
-    # Different target emails, so only the per-IP limit can stop this.
     responses = [
         await client.post("/auth/verify-otp", json={"email": f"u{i}@example.com", "code": "000000"})
         for i in range(31)

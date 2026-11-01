@@ -1,4 +1,6 @@
+import asyncio
 import logging
+import re
 
 import httpx
 
@@ -7,6 +9,106 @@ from pipeline.scraper.sources.base import RawPark, Source
 logger = logging.getLogger(__name__)
 
 OVERPASS_URL = "https://overpass-api.de/api/interpreter"
+USER_AGENT = "Shuvit/1.0 (https://shuvit.app)"
+HOUSTON_BBOX = (29.5, -95.8, 30.1, -95.0)
+RETRY_ATTEMPTS = 3
+SKATEBOARD_SPORT = '"sport"~"(^|;)skateboard(;|$)"'
+NON_PARK_TAGS = ("shop", "office", "craft", "club")
+NON_PARK_NAME = re.compile(r"\b(skate|board)\s*shop\b", re.IGNORECASE)
+
+
+class OverpassError(Exception):
+    pass
+
+
+def build_query(bbox: tuple[float, float, float, float]) -> str:
+    south, west, north, east = bbox
+    area = f"({south},{west},{north},{east})"
+    return f"""
+    [out:json][timeout:180];
+    (
+      nwr["leisure"="skatepark"]{area};
+      nwr["leisure"="pitch"][{SKATEBOARD_SPORT}]{area};
+      nwr[{SKATEBOARD_SPORT}]["shop"!~"."]{area};
+    );
+    out center tags;
+    """
+
+
+def is_park(tags: dict) -> bool:
+    if any(tag in tags for tag in NON_PARK_TAGS):
+        return False
+    return not NON_PARK_NAME.search(tags.get("name", ""))
+
+
+def classify_environment(tags: dict) -> str:
+    text = f"{tags.get('name', '')} {tags.get('description', '')}".lower()
+    is_indoor = (
+        tags.get("indoor") == "yes"
+        or tags.get("building", "no") != "no"
+        or tags.get("location") == "indoor"
+        or re.search(r"\bindoor\b", text) is not None
+    )
+    is_outdoor = (
+        tags.get("indoor") == "no"
+        or tags.get("location") == "outdoor"
+        or tags.get("covered") == "no"
+        or re.search(r"\boutdoor\b", text) is not None
+    )
+    if is_indoor and is_outdoor:
+        return "both"
+    return "indoor" if is_indoor else "outdoor"
+
+
+def classify_type(tags: dict) -> str | None:
+    name = tags.get("name", "")
+    description = tags.get("description", "")
+    combined = f"{name} {description}"
+    if re.search(r"\bdiy\b", combined, re.IGNORECASE):
+        return "diy"
+    if re.search(r"\b(bowl|transition|vert|mini ?ramp)\b", combined, re.IGNORECASE):
+        return "transition"
+    if re.search(r"\bstreet (plaza|course|park)\b|\bplaza\b", description, re.IGNORECASE):
+        return "street"
+    return None
+
+
+def build_address(tags: dict) -> str | None:
+    street = " ".join(p for p in (tags.get("addr:housenumber"), tags.get("addr:street")) if p)
+    if not street:
+        return None
+    parts = (street, tags.get("addr:city"), tags.get("addr:state"), tags.get("addr:postcode"))
+    return ", ".join(p for p in parts if p)
+
+
+def element_to_park(element: dict) -> RawPark | None:
+    tags = element.get("tags", {})
+    if not is_park(tags):
+        return None
+
+    center = element.get("center") or element
+    if "lat" not in center or "lon" not in center:
+        return None
+
+    return RawPark(
+        name=tags.get("name", "").strip(),
+        lat=center["lat"],
+        lng=center["lon"],
+        address=build_address(tags),
+        city=tags.get("addr:city") or None,
+        state=tags.get("addr:state") or None,
+        country=tags.get("addr:country", "US"),
+        zip_code=tags.get("addr:postcode") or None,
+        park_type=classify_type(tags),
+        environment=classify_environment(tags),
+        surface=tags.get("surface"),
+        lighting=tags.get("lit") == "yes" if tags.get("lit") else None,
+        is_free=tags.get("fee") != "yes",
+        description=tags.get("description"),
+        source="osm",
+        source_id=f"osm-{element['type']}-{element['id']}",
+        metadata=tags,
+    )
 
 
 class OverpassSource(Source):
@@ -16,126 +118,27 @@ class OverpassSource(Source):
         self,
         bbox: tuple[float, float, float, float] | None = None,
     ) -> list[RawPark]:
-        """Fetch skateparks from OpenStreetMap via Overpass API.
-
-        bbox: (south, west, north, east) - defaults to Houston, TX area
-        """
-        if bbox is None:
-            # Houston metropolitan area
-            bbox = (29.5, -95.8, 30.1, -95.0)
-
-        south, west, north, east = bbox
-        query = f"""
-        [out:json][timeout:60];
-        (
-          node["leisure"="pitch"]["sport"="skateboard"]({south},{west},{north},{east});
-          way["leisure"="pitch"]["sport"="skateboard"]({south},{west},{north},{east});
-          node["leisure"="skatepark"]({south},{west},{north},{east});
-          way["leisure"="skatepark"]({south},{west},{north},{east});
-          node["sport"="skateboard"]({south},{west},{north},{east});
-          way["sport"="skateboard"]({south},{west},{north},{east});
-        );
-        out center body;
-        """
-
+        bbox = bbox or HOUSTON_BBOX
         logger.info(f"Querying Overpass for bbox: {bbox}")
 
-        import asyncio
-        async with httpx.AsyncClient(timeout=120) as client:
-            for attempt in range(3):
-                resp = await client.post(OVERPASS_URL, data={"data": query})
-                if resp.status_code == 429 or resp.status_code >= 500:
-                    wait = (attempt + 1) * 15
-                    logger.warning(f"Overpass returned {resp.status_code}, retrying in {wait}s...")
-                    await asyncio.sleep(wait)
-                    continue
-                resp.raise_for_status()
-                break
-            data = resp.json()
+        data = await self._query(build_query(bbox))
+        parks = [p for p in map(element_to_park, data.get("elements", [])) if p]
 
-        parks = []
-        for element in data.get("elements", []):
-            tags = element.get("tags", {})
-
-            # Get coordinates (center for ways)
-            if element["type"] == "way" and "center" in element:
-                lat = element["center"]["lat"]
-                lng = element["center"]["lon"]
-            elif element["type"] == "node":
-                lat = element["lat"]
-                lng = element["lon"]
-            else:
-                continue
-
-            name = tags.get("name") or tags.get("description")
-            if not name:
-                logger.debug(f"Skipping unnamed park at {lat:.4f}, {lng:.4f}")
-                continue
-
-            park = RawPark(
-                name=name,
-                lat=lat,
-                lng=lng,
-                address=tags.get("addr:street") or None,
-                city=tags.get("addr:city") or None,
-                state=tags.get("addr:state") or None,
-                country=tags.get("addr:country", "US"),
-                zip_code=tags.get("addr:postcode") or None,
-                park_type=self._classify_type(tags),
-                environment=self._classify_indoor_outdoor(tags),
-                surface=tags.get("surface"),
-                lighting=tags.get("lit") == "yes" if tags.get("lit") else None,
-                is_free=tags.get("fee") != "yes",
-                features={},
-                description=tags.get("description"),
-                source="osm",
-                source_id=f"osm-{element['type']}-{element['id']}",
-                metadata=tags,
-            )
-            parks.append(park)
-
-        logger.info(f"Found {len(parks)} skateparks from OSM")
+        logger.info(f"Found {len(parks)} skateparks from OSM in {bbox}")
         return parks
 
-    def _classify_indoor_outdoor(self, tags: dict) -> str:
-        """Classify as indoor, outdoor, or both."""
-        indoor_tag = tags.get("indoor", "")
-        building_tag = tags.get("building", "")
-        covered_tag = tags.get("covered", "")
-        location_tag = tags.get("location", "")
-        name = tags.get("name", "").lower()
-        desc = tags.get("description", "").lower()
-        combined = f"{name} {desc}"
-
-        is_indoor = (
-            indoor_tag == "yes"
-            or building_tag not in ("", "no")
-            or location_tag == "indoor"
-            or "indoor" in combined
-        )
-        is_outdoor = (
-            indoor_tag == "no"
-            or location_tag == "outdoor"
-            or "outdoor" in combined
-            or covered_tag == "no"
-        )
-
-        if is_indoor and is_outdoor:
-            return "both"
-        if is_indoor:
-            return "indoor"
-        # Default to outdoor — most skateparks are
-        return "outdoor"
-
-    def _classify_type(self, tags: dict) -> str | None:
-        name = tags.get("name", "").lower()
-        desc = tags.get("description", "").lower()
-        combined = f"{name} {desc}"
-
-        if "diy" in combined:
-            return "diy"
-        if "transition" in combined or "bowl" in combined or "vert" in combined:
-            return "transition"
-        if "street" in combined:
-            return "street"
-        return "mixed"
+    async def _query(self, query: str) -> dict:
+        async with httpx.AsyncClient(timeout=240, headers={"User-Agent": USER_AGENT}) as client:
+            for attempt in range(1, RETRY_ATTEMPTS + 1):
+                try:
+                    response = await client.post(OVERPASS_URL, data={"data": query})
+                    response.raise_for_status()
+                    data = response.json()
+                    if "timed out" in data.get("remark", "") or "out of memory" in data.get("remark", ""):
+                        raise OverpassError(data["remark"])
+                    return data
+                except (httpx.HTTPError, ValueError, OverpassError) as exc:
+                    logger.warning(f"Overpass attempt {attempt} failed: {exc}")
+                    if attempt < RETRY_ATTEMPTS:
+                        await asyncio.sleep(attempt * 30)
+        raise OverpassError(f"Overpass failed after {RETRY_ATTEMPTS} attempts")

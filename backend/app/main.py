@@ -41,7 +41,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount media files for local development
 import os
 media_dir = settings.MEDIA_DIR
 if not os.path.isabs(media_dir):
@@ -49,7 +48,6 @@ if not os.path.isabs(media_dir):
 os.makedirs(media_dir, exist_ok=True)
 app.mount("/media", StaticFiles(directory=media_dir), name="media")
 
-# API routes
 app.include_router(parks.router, prefix="/api/v1")
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(users.router, prefix="/api/v1")

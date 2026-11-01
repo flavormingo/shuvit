@@ -16,7 +16,6 @@ final class AuthManager {
         KeychainHelper.readString(for: Self.tokenKey)
     }
 
-    /// Read token without needing MainActor isolation
     nonisolated static var currentToken: String? {
         KeychainHelper.readString(for: tokenKey)
     }
@@ -54,7 +53,6 @@ final class AuthManager {
             let user: User = try await APIClient.shared.request(.me)
             currentUser = user
         } catch {
-            // Token might be expired
             if case APIError.unauthorized = error {
                 logout()
             }
@@ -71,6 +69,5 @@ final class AuthManager {
         if isAuthenticated {
             await action()
         }
-        // If not authenticated, the UI should show login
     }
 }

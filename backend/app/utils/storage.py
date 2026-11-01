@@ -41,7 +41,7 @@ class InvalidUpload(Exception):
 
 @dataclass
 class StoredMedia:
-    media_type: str  # image or video
+    media_type: str
     file_url: str
     thumbnail_url: str | None
 
@@ -108,8 +108,6 @@ def _process_video(data: bytes) -> tuple[bytes, bytes]:
         logger.error("ffmpeg is not installed; can't process video uploads")
         raise InvalidUpload("Video uploads aren't available right now.")
 
-    # Force the demuxer and limit protocols so a crafted file can't make ffmpeg
-    # read other files or reach the network.
     base = ["ffmpeg", "-nostdin", "-loglevel", "error", "-protocol_whitelist", "file", "-f", "mov"]
 
     with tempfile.TemporaryDirectory() as tmp:

@@ -25,7 +25,6 @@ def upgrade() -> None:
         "skateparks",
         ["environment"],
     )
-    # Backfill from features JSONB where scraper already classified indoor/outdoor
     op.execute("""
         UPDATE skateparks
         SET environment = CASE

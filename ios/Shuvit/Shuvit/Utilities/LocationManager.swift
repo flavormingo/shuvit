@@ -30,8 +30,6 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
         manager.stopUpdatingLocation()
     }
 
-    // MARK: - CLLocationManagerDelegate
-
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let latest = locations.last else { return }
         location = latest.coordinate
@@ -45,6 +43,5 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
     }
 
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-        // Location errors are non-fatal; user can search manually
     }
 }

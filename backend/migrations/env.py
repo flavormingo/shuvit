@@ -8,8 +8,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from app.config import settings
 from app.models.skatepark import Base
 
-# Import all models so they register with Base.metadata
-import app.models  # noqa: F401
+import app.models
 
 config = context.config
 config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)

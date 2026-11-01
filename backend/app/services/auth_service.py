@@ -16,8 +16,6 @@ from app.utils.security import create_access_token
 
 logger = logging.getLogger(__name__)
 
-# Together these allow at most 25 guesses per email per hour against a
-# one-in-a-million code, which makes guessing one impractical.
 MAX_OTP_ATTEMPTS = 5
 MAX_CODES_PER_HOUR = 5
 
@@ -32,10 +30,9 @@ def _generate_otp() -> str:
 
 async def request_magic_link(db: AsyncSession, email: str) -> bool:
     """Generate and send a magic link + OTP code. Returns True on success."""
-    # Rate limit: check for recent token
     recent = await db.execute(
         select(MagicLinkToken)
-        .where(MagicLinkToken.email == email, MagicLinkToken.used == False)  # noqa: E712
+        .where(MagicLinkToken.email == email, MagicLinkToken.used.is_(False))
         .order_by(MagicLinkToken.created_at.desc())
         .limit(1)
     )
@@ -44,7 +41,7 @@ async def request_magic_link(db: AsyncSession, email: str) -> bool:
     if recent_token:
         age = (datetime.now(timezone.utc) - recent_token.created_at.replace(tzinfo=timezone.utc)).total_seconds()
         if age < settings.MAGIC_LINK_RATE_LIMIT_SECONDS:
-            return True  # Silently succeed to avoid leaking email existence
+            return True
 
     hour_ago = datetime.now(timezone.utc) - timedelta(hours=1)
     codes_this_hour = await db.scalar(
@@ -66,7 +63,6 @@ async def request_magic_link(db: AsyncSession, email: str) -> bool:
         + timedelta(minutes=settings.MAGIC_LINK_EXPIRE_MINUTES),
     )
     db.add(magic_link)
-    # Commit before emailing so the code is valid the moment it arrives.
     await db.commit()
 
     callback_url = f"{settings.BASE_URL}/api/v1/auth/callback?token={raw_token}&redirect=shuvit"
@@ -85,7 +81,6 @@ async def request_magic_link(db: AsyncSession, email: str) -> bool:
         )
     except Exception:
         logger.exception("Failed to send auth email")
-        # Nobody received this code, so don't let it block an immediate retry.
         magic_link.used = True
         await db.commit()
         return False
@@ -101,7 +96,7 @@ async def verify_magic_link(db: AsyncSession, raw_token: str) -> str | None:
     result = await db.execute(
         select(MagicLinkToken).where(
             MagicLinkToken.token_hash == token_hash,
-            MagicLinkToken.used == False,  # noqa: E712
+            MagicLinkToken.used.is_(False),
             MagicLinkToken.expires_at > now,
         )
     )
@@ -116,13 +111,11 @@ async def verify_otp(db: AsyncSession, email: str, code: str) -> str | None:
     """Verify a 6-digit OTP code and return a JWT, or None if invalid."""
     now = datetime.now(timezone.utc)
 
-    # Only the newest code counts. The row lock stops parallel guesses from
-    # slipping past the attempt limit.
     result = await db.execute(
         select(MagicLinkToken)
         .where(
             MagicLinkToken.email == email,
-            MagicLinkToken.used == False,  # noqa: E712
+            MagicLinkToken.used.is_(False),
             MagicLinkToken.expires_at > now,
         )
         .order_by(MagicLinkToken.created_at.desc())
@@ -137,7 +130,6 @@ async def verify_otp(db: AsyncSession, email: str, code: str) -> str | None:
 
     if not hmac.compare_digest(magic_token.otp_hash, _hash(code)):
         magic_token.attempts += 1
-        # The caller raises on failure, which would roll this count back.
         await db.commit()
         return None
 

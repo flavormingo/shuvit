@@ -15,10 +15,8 @@ RestartSec=5
 StandardOutput=journal
 StandardError=journal
 
-# Security hardening
 NoNewPrivileges=true
 ProtectSystem=strict
-# tmpfs, not true: asyncpg stats ~/.postgresql and crashes if /home is unreadable.
 ProtectHome=tmpfs
 PrivateTmp=true
 ReadWritePaths=/opt/shuvit/media

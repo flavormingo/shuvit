@@ -6,9 +6,11 @@ After=network.target postgresql.service
 Type=oneshot
 User=shuvit
 Group=shuvit
-# Must run from the parent of pipeline/ so that "pipeline" is importable.
 WorkingDirectory=/opt/shuvit
 EnvironmentFile=/opt/shuvit/backend/.env
-ExecStart=/opt/shuvit/pipeline/.venv/bin/python -m pipeline.scraper.main scrape --source all
+CacheDirectory=shuvit-tiles
+ExecStart=/opt/shuvit/pipeline/.venv/bin/python -m pipeline.scraper.main scrape --source osm --world --cache-dir /var/cache/shuvit-tiles
+MemoryMax=1G
+Nice=10
 StandardOutput=journal
 StandardError=journal

@@ -26,7 +26,6 @@ async def request_link(
         raise HTTPException(status_code=429, detail="Too many requests. Try again later.")
 
     if not await request_magic_link(db, body.email):
-        # An email provider failure says nothing about whether the account exists.
         raise HTTPException(status_code=503, detail="Couldn't send your code. Try again shortly.")
     return {"message": "If that email is valid, a verification code has been sent."}
 
@@ -55,7 +54,6 @@ async def auth_callback(
     if not jwt_token:
         raise HTTPException(status_code=400, detail="Invalid or expired magic link")
 
-    # If redirect=shuvit, redirect to app deep link
     if redirect == "shuvit":
         return RedirectResponse(
             url=f"shuvit://auth?token={jwt_token}",

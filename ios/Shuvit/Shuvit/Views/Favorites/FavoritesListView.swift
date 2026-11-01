@@ -18,7 +18,6 @@ struct FavoritesListView: View {
                 }
             }
             .navigationTitle("Favorites")
-            // Keyed on sign-in state so favorites load right after signing in.
             .task(id: AuthManager.shared.isAuthenticated) {
                 await viewModel.load()
             }

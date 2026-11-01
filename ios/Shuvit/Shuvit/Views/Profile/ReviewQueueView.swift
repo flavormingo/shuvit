@@ -1,7 +1,6 @@
 import AVKit
 import SwiftUI
 
-/// Admin-only list of submissions waiting for approval and media people reported.
 struct ReviewQueueView: View {
     @State private var items: [ReviewItem] = []
     @State private var isLoading = true

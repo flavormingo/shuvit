@@ -10,7 +10,6 @@ final class UserSettings {
     }
 
     private init() {
-        // Default to miles for US users, km for everyone else
         if UserDefaults.standard.object(forKey: "useMiles") != nil {
             self.useMiles = UserDefaults.standard.bool(forKey: "useMiles")
         } else {

@@ -44,7 +44,6 @@ async def update_me(
         if not name or len(name) > 20 or not re.match(r'^[a-zA-Z0-9]+$', name):
             raise HTTPException(status_code=400, detail="Name must be 1-20 characters, letters and numbers only")
         body.display_name = name
-        # Check uniqueness (case-insensitive)
         existing = await db.execute(
             select(User.id).where(
                 func.lower(User.display_name) == body.display_name.lower(),
@@ -92,7 +91,6 @@ async def delete_me(
 
     await db.execute(delete(MagicLinkToken).where(MagicLinkToken.email == user.email))
     await db.delete(user)
-    # Commit first: a stray file is harmless, a user pointing at missing files isn't.
     await db.commit()
 
     for url in files:
@@ -179,7 +177,6 @@ async def my_stats(
 
     rank = _get_rank(count)
 
-    # Progress to next rank
     thresholds = {"Rookie": 10, "Pro": 50, "Wizard": 100, "Legend": None}
     next_threshold = thresholds[rank]
     if next_threshold:

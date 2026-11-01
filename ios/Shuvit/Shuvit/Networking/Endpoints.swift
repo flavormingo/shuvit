@@ -35,8 +35,6 @@ struct Endpoint {
     }
 }
 
-// MARK: - Park Endpoints
-
 extension Endpoint {
     static func parks(page: Int = 1, limit: Int = 50, city: String? = nil, q: String? = nil) -> Endpoint {
         var items = [
@@ -79,8 +77,6 @@ extension Endpoint {
     }
 }
 
-// MARK: - Auth Endpoints
-
 extension Endpoint {
     static func requestMagicLink(email: String) -> Endpoint {
         let body = try? JSONEncoder().encode(["email": email])
@@ -92,8 +88,6 @@ extension Endpoint {
         return Endpoint(path: "/auth/verify-otp", method: .post, body: body)
     }
 }
-
-// MARK: - User Endpoints
 
 extension Endpoint {
     static var me: Endpoint {
@@ -130,8 +124,6 @@ extension Endpoint {
     }
 }
 
-// MARK: - Favorites Endpoints
-
 extension Endpoint {
     static var favorites: Endpoint {
         Endpoint(path: "/favorites", requiresAuth: true)
@@ -146,8 +138,6 @@ extension Endpoint {
         Endpoint(path: "/favorites/\(parkId)", method: .delete, requiresAuth: true)
     }
 }
-
-// MARK: - Media Endpoints
 
 extension Endpoint {
     static func parkMedia(parkId: UUID) -> Endpoint {

@@ -21,7 +21,6 @@ struct ContributorProfileView: View {
                         .padding(.top, 60)
                 } else if let profile {
                     VStack(spacing: 24) {
-                        // Avatar + name
                         VStack(spacing: 12) {
                             AsyncImage(url: profile.avatarFullURL) { phase in
                                 switch phase {
@@ -46,13 +45,11 @@ struct ContributorProfileView: View {
                         }
                         .padding(.top, 20)
 
-                        // Stats
                         HStack(spacing: 32) {
                             statItem(value: "\(profile.approvedCount)", label: "Contributions")
                             statItem(value: "\(profile.parksCount)", label: "Parks")
                         }
 
-                        // Contributions grid
                         if contributions.isEmpty {
                             Text("No contributions yet")
                                 .font(.subheadline)

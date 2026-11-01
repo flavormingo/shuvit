@@ -145,7 +145,6 @@ async def get_in_bounds(
     """Parks inside a map viewport. The best-documented parks win when there are too many."""
     from sqlalchemy import text
 
-    # A viewport crossing the antimeridian has west > east and needs two boxes.
     boxes = [(west, east)] if west <= east else [(west, 180.0), (-180.0, east)]
     condition = " OR ".join(
         f"geom && ST_MakeEnvelope(:w{i}, :south, :e{i}, :north, 4326)" for i in range(len(boxes))

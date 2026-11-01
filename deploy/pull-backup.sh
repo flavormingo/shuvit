@@ -1,6 +1,4 @@
 #!/bin/bash
-# Copies VPS backups to this Mac so they survive losing the server.
-# Installed to ~/Library/Application Support/shuvit/ and run daily by launchd.
 set -euo pipefail
 umask 077
 

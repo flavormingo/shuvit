@@ -15,7 +15,7 @@ from app.schemas.media import (
 )
 from app.services import media_service
 
-MEDIA_RATE_LIMIT = 10  # max submissions per hour
+MEDIA_SUBMISSIONS_PER_HOUR = 10
 
 router = APIRouter(tags=["media"])
 
@@ -29,11 +29,11 @@ async def submit_media(
     park_id: uuid.UUID,
     file: UploadFile = File(...),
     description: str | None = Form(None),
-    tags: str | None = Form(None),  # comma-separated
+    tags: str | None = Form(None),
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    if await is_rate_limited(f"media_rate:{user.id}", MEDIA_RATE_LIMIT, 3600):
+    if await is_rate_limited(f"media_rate:{user.id}", MEDIA_SUBMISSIONS_PER_HOUR, 3600):
         raise HTTPException(status_code=429, detail="Too many submissions. Try again later.")
 
     file_bytes = await file.read()

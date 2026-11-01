@@ -32,7 +32,6 @@ struct ProfileView: View {
 
     private var signedInView: some View {
         List {
-            // User card
             Section {
                 HStack(spacing: 16) {
                     Button {
@@ -104,7 +103,6 @@ struct ProfileView: View {
                 .padding(.vertical, 8)
             }
 
-            // Rank progress
             if let s = stats, let nextRank = s.nextRank {
                 Section {
                     VStack(alignment: .leading, spacing: 8) {

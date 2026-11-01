@@ -18,10 +18,8 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Enable PostGIS
     op.execute("CREATE EXTENSION IF NOT EXISTS postgis")
 
-    # Skateparks
     op.create_table(
         "skateparks",
         sa.Column("id", postgresql.UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), primary_key=True),
@@ -51,7 +49,6 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
         sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
     )
-    # PostGIS auto-creates a GIST index on geometry columns, so skip manual creation
     op.create_index("idx_skateparks_city_state", "skateparks", ["city", "state"])
     op.create_index(
         "idx_skateparks_source",
@@ -61,7 +58,6 @@ def upgrade() -> None:
         postgresql_where=sa.text("source IS NOT NULL AND source_id IS NOT NULL"),
     )
 
-    # Users
     op.create_table(
         "users",
         sa.Column("id", postgresql.UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), primary_key=True),
@@ -72,7 +68,6 @@ def upgrade() -> None:
         sa.Column("last_login", sa.DateTime(timezone=True)),
     )
 
-    # Magic link tokens
     op.create_table(
         "magic_link_tokens",
         sa.Column("id", postgresql.UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), primary_key=True),
@@ -83,7 +78,6 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
     )
 
-    # Favorites
     op.create_table(
         "favorites",
         sa.Column("id", postgresql.UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), primary_key=True),
@@ -93,7 +87,6 @@ def upgrade() -> None:
         sa.UniqueConstraint("user_id", "park_id", name="uq_user_park_favorite"),
     )
 
-    # Media submissions
     op.create_table(
         "media_submissions",
         sa.Column("id", postgresql.UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), primary_key=True),

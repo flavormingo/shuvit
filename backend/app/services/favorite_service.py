@@ -65,7 +65,6 @@ async def get_favorites(db: AsyncSession, user_id: uuid.UUID) -> list[dict]:
 async def add_favorite(
     db: AsyncSession, user_id: uuid.UUID, park_id: uuid.UUID
 ) -> dict | None:
-    # Check park exists
     park = await db.execute(select(Skatepark.id).where(Skatepark.id == park_id))
     if not park.scalar_one_or_none():
         return None

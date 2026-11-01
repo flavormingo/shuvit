@@ -46,7 +46,7 @@ async def test_gps_is_stripped_and_rotation_applied(client, login, park_id, medi
     assert response.status_code == 201
     with Image.open(stored(media_dir, response.json()["file_url"])) as image:
         assert not image.getexif()
-        assert image.size == (400, 800)  # orientation 6 means rotated 90 degrees
+        assert image.size == (400, 800)
 
 
 async def test_heic_labelled_jpeg_is_accepted(client, login, park_id, media_dir):
@@ -154,7 +154,7 @@ async def test_reported_media_returns_to_queue_and_can_be_removed(client, login,
     for _ in range(2):
         response = await client.post(f"/media/{media_id}/report", json={"reason": "spam"}, headers=reporter)
         assert response.status_code == 204
-    assert len(sent_emails) == before + 1  # second report is a no-op
+    assert len(sent_emails) == before + 1
 
     queue = (await client.get("/media/review-queue", headers=admin)).json()
     assert queue[0]["id"] == media_id and queue[0]["report_count"] == 1
@@ -203,7 +203,6 @@ async def test_account_deletion_removes_everything(client, login, park_id, media
     assert file_path.exists()
     await client.post("/favorites", json={"park_id": park_id}, headers=user)
 
-    # The admin reviewed media, which must not stop the admin deleting their own account later.
     assert (await client.delete("/user/me", headers=user)).status_code == 204
 
     assert not file_path.exists()

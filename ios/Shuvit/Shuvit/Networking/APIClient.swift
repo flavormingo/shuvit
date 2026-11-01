@@ -18,7 +18,6 @@ enum APIError: LocalizedError {
         }
     }
 
-    /// The API sends human-readable errors as {"detail": "..."}.
     private static func detail(from body: String?) -> String? {
         guard let data = body?.data(using: .utf8),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
@@ -40,7 +39,6 @@ final class APIClient {
         config.timeoutIntervalForResource = 60
         self.session = URLSession(configuration: config)
 
-        // A video on a slow connection can take minutes to send.
         let uploadConfig = URLSessionConfiguration.default
         uploadConfig.timeoutIntervalForRequest = 120
         uploadConfig.timeoutIntervalForResource = 600
@@ -51,7 +49,6 @@ final class APIClient {
         try decode(try await perform(try makeRequest(endpoint), using: session))
     }
 
-    /// For requests whose response body doesn't matter.
     func send(_ endpoint: Endpoint) async throws {
         _ = try await perform(try makeRequest(endpoint), using: session)
     }
@@ -106,8 +103,6 @@ final class APIClient {
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         }
 
-        // Public endpoints use the token when there is one, for example to hide
-        // media from users this person has blocked.
         if let token = AuthManager.currentToken {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         } else if endpoint.requiresAuth {

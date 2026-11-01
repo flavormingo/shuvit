@@ -57,7 +57,6 @@ struct MediaCarouselView: View {
 
                             Spacer()
 
-                            // Info bar
                             VStack(spacing: 12) {
                                 if let desc = item.description, !desc.isEmpty {
                                     Text(desc)
@@ -85,7 +84,6 @@ struct MediaCarouselView: View {
                 }
                 .tabViewStyle(.page(indexDisplayMode: .automatic))
 
-                // Counter
                 VStack {
                     HStack {
                         Spacer()
@@ -183,7 +181,6 @@ struct MediaCarouselView: View {
     }
 }
 
-/// Plays one video. Pauses when the user swipes to another item or leaves.
 private struct InlineVideoPlayer: View {
     let isActive: Bool
     @State private var player: AVPlayer

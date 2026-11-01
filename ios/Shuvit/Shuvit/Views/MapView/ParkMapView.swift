@@ -33,10 +33,8 @@ struct ParkMapView: View {
         }
     }
 
-    // Shown until we know where the user is, or if they decline location access.
     private let fallbackCenter = CLLocationCoordinate2D(latitude: 29.7604, longitude: -95.3698)
 
-    /// Distance from the user, not from the map's center. Nil without a location fix.
     private func distanceKm(to park: Skatepark) -> Double? {
         guard let user = locationManager.location else { return nil }
         return CLLocation(latitude: user.latitude, longitude: user.longitude)
@@ -66,7 +64,6 @@ struct ParkMapView: View {
                 viewModel.loadVisible(region: context.region)
             }
 
-            // Bottom overlay
             VStack(spacing: 0) {
                 Spacer()
 
@@ -95,7 +92,6 @@ struct ParkMapView: View {
             }
         }
         .onAppear {
-            // onAppear also fires when returning to this tab; don't move the map then.
             guard !hasSetInitialCamera else { return }
             hasSetInitialCamera = true
             locationManager.requestPermission()
@@ -103,8 +99,6 @@ struct ParkMapView: View {
             else { moveCamera(to: fallbackCenter) }
         }
         .onChange(of: locationManager.location?.latitude) {
-            // The first fix usually arrives after the map appears. Center on it once,
-            // then leave the camera to the user.
             guard !hasCenteredOnUser, !viewModel.isShowingSearchResults,
                   let location = locationManager.location else { return }
             hasCenteredOnUser = true
@@ -123,7 +117,6 @@ struct ParkMapView: View {
 
     private var searchBar: some View {
         VStack(spacing: 0) {
-            // Search row
             HStack(spacing: 12) {
                 Image(systemName: "magnifyingglass")
                     .font(.body.weight(.medium))
@@ -157,7 +150,6 @@ struct ParkMapView: View {
                     }
                 }
 
-                // Filter toggle
                 Button {
                     withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                         showFilters.toggle()
@@ -189,7 +181,6 @@ struct ParkMapView: View {
             .padding(.trailing, 10)
             .padding(.vertical, 12)
 
-            // Filter panel
             if showFilters {
                 VStack(spacing: 0) {
                     Rectangle()

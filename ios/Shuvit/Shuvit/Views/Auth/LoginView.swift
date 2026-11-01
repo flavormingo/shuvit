@@ -9,7 +9,6 @@ struct LoginView: View {
             VStack(spacing: 32) {
                 Spacer()
 
-                // Logo
                 VStack(spacing: 12) {
                     Image("ShuvitLogo")
                         .resizable()
@@ -56,8 +55,6 @@ struct LoginView: View {
         }
     }
 
-    // MARK: - Email Entry
-
     private var emailEntryView: some View {
         VStack(spacing: 16) {
             TextField("Email address", text: $viewModel.email)
@@ -94,8 +91,6 @@ struct LoginView: View {
             }
         }
     }
-
-    // MARK: - OTP Entry
 
     private var otpEntryView: some View {
         VStack(spacing: 20) {
@@ -155,8 +150,6 @@ struct LoginView: View {
     }
 }
 
-// MARK: - OTP Field
-
 struct OTPFieldView: View {
     @Binding var code: String
     var onComplete: () -> Void
@@ -165,14 +158,12 @@ struct OTPFieldView: View {
 
     var body: some View {
         ZStack {
-            // Hidden text field that captures input
             TextField("", text: $code)
                 .keyboardType(.numberPad)
                 .textContentType(.oneTimeCode)
                 .focused($isFocused)
                 .opacity(0)
                 .onChange(of: code) { _, newValue in
-                    // Only allow digits, max 6
                     let filtered = String(newValue.filter(\.isNumber).prefix(6))
                     if filtered != newValue {
                         code = filtered
@@ -182,7 +173,6 @@ struct OTPFieldView: View {
                     }
                 }
 
-            // Visual digit boxes
             HStack(spacing: 8) {
                 ForEach(0..<6, id: \.self) { index in
                     let digit = index < code.count

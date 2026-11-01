@@ -26,13 +26,12 @@ final class ParkDetailViewModel {
             errorMessage = error.localizedDescription
         }
 
-        // Check if this park is in the user's favorites
         if AuthManager.shared.isAuthenticated {
             do {
                 let favs: [Favorite] = try await APIClient.shared.request(.favorites)
                 isFavorited = favs.contains { $0.parkId == parkId }
             } catch {
-                // Non-critical — just leave isFavorited as false
+                isFavorited = false
             }
         }
 

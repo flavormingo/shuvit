@@ -95,7 +95,6 @@ struct SubmitMediaSheet: View {
             if item.supportedContentTypes.contains(where: { $0.conforms(to: .movie) }) {
                 selection = try await prepareVideo(item)
             } else if let data = try await item.loadTransferable(type: Data.self) {
-                // The server converts any image format, including HEIC.
                 let type = item.supportedContentTypes.first
                 selection = SelectedMedia(
                     data: data,
@@ -117,7 +116,6 @@ struct SubmitMediaSheet: View {
         }
         defer { try? FileManager.default.removeItem(at: picked.url) }
 
-        // Camera videos are often hundreds of MB, so shrink them before uploading.
         let output = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString)
             .appendingPathExtension("mp4")
@@ -183,7 +181,6 @@ private enum SubmitError: LocalizedError {
     }
 }
 
-/// Copies the picked movie somewhere we can read it after the picker's file goes away.
 private struct PickedMovie: Transferable {
     let url: URL
 

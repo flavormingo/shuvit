@@ -22,7 +22,6 @@ def upgrade() -> None:
         sa.Column("attempts", sa.Integer(), nullable=False, server_default="0"),
     )
 
-    # Deleting an admin's account must not fail because they reviewed media.
     op.drop_constraint("media_submissions_reviewed_by_fkey", "media_submissions", type_="foreignkey")
     op.create_foreign_key(
         "media_submissions_reviewed_by_fkey",

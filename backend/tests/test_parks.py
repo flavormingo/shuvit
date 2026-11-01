@@ -37,7 +37,6 @@ async def test_bounds_includes_only_parks_in_viewport(client, park_id):
 
 
 async def test_bounds_handles_antimeridian(client, park_id):
-    # west > east means the box wraps around the far side of the world through Houston's side.
     wrapped = await client.get("/parks/bounds", params={"south": 29, "west": 170, "north": 30, "east": -95})
     assert [p["id"] for p in wrapped.json()] == [park_id]
     missed = await client.get("/parks/bounds", params={"south": 29, "west": 170, "north": 30, "east": -100})

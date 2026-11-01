@@ -97,7 +97,6 @@ struct SkateparkDetail: Codable, Identifiable {
     }
 }
 
-/// Type-erased Codable wrapper for JSON values
 struct AnyCodable: Codable, Hashable {
     let value: Any
 
