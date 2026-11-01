@@ -163,7 +163,7 @@ struct MediaCarouselView: View {
         guard let current else { return }
         do {
             try await APIClient.shared.send(.reportMedia(id: current.id, reason: reason))
-            notice = "Thanks. We'll review this within 24 hours."
+            notice = "Thanks. We'll review this within 48 hours."
         } catch {
             notice = error.localizedDescription
         }

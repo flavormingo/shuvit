@@ -1,6 +1,6 @@
 # Shuvit
 
-Worldwide skatepark index with photos and reviews from the community.
+Worldwide skatepark index with photos and videos from the community.
 
 - `backend/`: FastAPI, PostgreSQL/PostGIS and Redis
 - `ios/Shuvit/`: SwiftUI app. The Xcode project is generated from `project.yml` with `xcodegen generate`
