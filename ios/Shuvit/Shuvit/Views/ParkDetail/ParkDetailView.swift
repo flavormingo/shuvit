@@ -67,7 +67,7 @@ struct ParkDetailView: View {
                             showingLogin = true
                         }
                     } label: {
-                        Label("Add Photo or Video", systemImage: "camera.fill")
+                        Label("Add Photo", systemImage: "camera.fill")
                             .font(.subheadline.weight(.semibold))
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 12)
@@ -259,7 +259,7 @@ struct ParkDetailView: View {
 
     private func mediaSection(_ media: [MediaItem]) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Photos & Videos")
+            Text("Photos")
                 .font(.headline)
 
             ParkMediaGallery(media: media) {

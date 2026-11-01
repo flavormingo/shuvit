@@ -1,6 +1,6 @@
 # Shuvit
 
-Worldwide skatepark index with photos and videos from the community.
+Worldwide skatepark index with photos from the community.
 
 - `backend/`: FastAPI, PostgreSQL/PostGIS and Redis
 - `ios/Shuvit/`: SwiftUI app. The Xcode project is generated from `project.yml` with `xcodegen generate`
@@ -57,6 +57,7 @@ pg_restore -d shuvit --no-owner db-<timestamp>.dump
 ## Things that are easy to break
 
 - `shuvit-api.service` must use `ProtectHome=tmpfs`, not `true`. asyncpg checks `~/.postgresql` when connecting and crashes every database request if `/home` is unreadable. `/health` keeps passing when this happens.
-- nginx `client_max_body_size` must stay above `MAX_VIDEO_SIZE` in `backend/app/config.py`.
+- nginx `client_max_body_size` must stay above the upload limits in `backend/app/config.py`.
+- Video uploads are off. To bring them back, set `ALLOW_VIDEO_UPLOADS`, raise the nginx limit and restore the iOS picker and player from git history.
 - OpenStreetMap requires the attribution shown in the app and on the site. GeoNames requires the attribution in `site/terms.html`.
 - Use the default offline geocoder for large scrapes. Nominatim's usage policy doesn't allow bulk geocoding.

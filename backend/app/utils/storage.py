@@ -141,7 +141,9 @@ def _write(folder: str, name: str, data: bytes) -> str:
 async def store_media(data: bytes, folder: str) -> StoredMedia:
     media_type = sniff_media_type(data)
     if media_type is None:
-        raise InvalidUpload("Unsupported file type. Use a photo or video.")
+        raise InvalidUpload("Unsupported file type. Please choose a photo.")
+    if media_type == "video" and not settings.ALLOW_VIDEO_UPLOADS:
+        raise InvalidUpload("Only photos can be uploaded right now.")
     _check_size(media_type, len(data))
 
     file_id = uuid.uuid4()

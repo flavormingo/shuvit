@@ -1,5 +1,3 @@
-import AVFoundation
-import CoreTransferable
 import PhotosUI
 import SwiftUI
 import UniformTypeIdentifiers
@@ -9,7 +7,7 @@ struct SubmitMediaSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var selectedItem: PhotosPickerItem?
-    @State private var selection: SelectedMedia?
+    @State private var selection: SelectedPhoto?
     @State private var isPreparing = false
     @State private var description = ""
     @State private var tags = ""
@@ -17,20 +15,18 @@ struct SubmitMediaSheet: View {
     @State private var errorMessage: String?
     @State private var uploadSuccess = false
 
-    private static let maxVideoBytes = 50 * 1024 * 1024
-
     var body: some View {
         NavigationStack {
             Form {
-                Section("Select Media") {
-                    PhotosPicker(selection: $selectedItem, matching: .any(of: [.images, .videos])) {
+                Section("Select Photo") {
+                    PhotosPicker(selection: $selectedItem, matching: .images) {
                         if isPreparing {
                             Label("Preparing…", systemImage: "hourglass")
-                        } else if let selection {
-                            Label(selection.isVideo ? "Video selected" : "Photo selected", systemImage: "checkmark.circle.fill")
+                        } else if selection != nil {
+                            Label("Photo selected", systemImage: "checkmark.circle.fill")
                                 .foregroundStyle(.green)
                         } else {
-                            Label("Choose photo or video", systemImage: "photo.on.rectangle.angled")
+                            Label("Choose photo", systemImage: "photo.on.rectangle.angled")
                         }
                     }
                     .disabled(isPreparing || isUploading)
@@ -68,7 +64,7 @@ struct SubmitMediaSheet: View {
                     .disabled(selection == nil || isPreparing || isUploading)
                 }
             }
-            .navigationTitle("Submit Media")
+            .navigationTitle("Add Photo")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -78,7 +74,7 @@ struct SubmitMediaSheet: View {
             .alert("Submitted!", isPresented: $uploadSuccess) {
                 Button("OK") { dismiss() }
             } message: {
-                Text("Your submission is pending review. You'll see it in the app once approved.")
+                Text("Your photo is pending review. You'll see it in the app once approved.")
             }
         }
     }
@@ -92,48 +88,19 @@ struct SubmitMediaSheet: View {
         defer { isPreparing = false }
 
         do {
-            if item.supportedContentTypes.contains(where: { $0.conforms(to: .movie) }) {
-                selection = try await prepareVideo(item)
-            } else if let data = try await item.loadTransferable(type: Data.self) {
+            if let data = try await item.loadTransferable(type: Data.self) {
                 let type = item.supportedContentTypes.first
-                selection = SelectedMedia(
+                selection = SelectedPhoto(
                     data: data,
                     fileName: "upload.\(type?.preferredFilenameExtension ?? "jpg")",
-                    mimeType: type?.preferredMIMEType ?? "image/jpeg",
-                    isVideo: false
+                    mimeType: type?.preferredMIMEType ?? "image/jpeg"
                 )
             } else {
-                errorMessage = "That item couldn't be loaded."
+                errorMessage = "That photo couldn't be loaded."
             }
         } catch {
             errorMessage = error.localizedDescription
         }
-    }
-
-    private func prepareVideo(_ item: PhotosPickerItem) async throws -> SelectedMedia {
-        guard let picked = try await item.loadTransferable(type: PickedMovie.self) else {
-            throw SubmitError.unreadable
-        }
-        defer { try? FileManager.default.removeItem(at: picked.url) }
-
-        let output = FileManager.default.temporaryDirectory
-            .appendingPathComponent(UUID().uuidString)
-            .appendingPathExtension("mp4")
-        defer { try? FileManager.default.removeItem(at: output) }
-
-        let asset = AVURLAsset(url: picked.url)
-        guard let export = AVAssetExportSession(asset: asset, presetName: AVAssetExportPresetMediumQuality) else {
-            throw SubmitError.unreadable
-        }
-        export.outputURL = output
-        export.outputFileType = .mp4
-        export.shouldOptimizeForNetworkUse = true
-        await export.export()
-        guard export.status == .completed else { throw SubmitError.unreadable }
-
-        let data = try Data(contentsOf: output)
-        guard data.count <= Self.maxVideoBytes else { throw SubmitError.tooLong }
-        return SelectedMedia(data: data, fileName: "upload.mp4", mimeType: "video/mp4", isVideo: true)
     }
 
     private func upload() async {
@@ -162,37 +129,8 @@ struct SubmitMediaSheet: View {
     }
 }
 
-private struct SelectedMedia {
+private struct SelectedPhoto {
     let data: Data
     let fileName: String
     let mimeType: String
-    let isVideo: Bool
-}
-
-private enum SubmitError: LocalizedError {
-    case unreadable
-    case tooLong
-
-    var errorDescription: String? {
-        switch self {
-        case .unreadable: return "That video couldn't be processed."
-        case .tooLong: return "That video is too long. Trim it and try again."
-        }
-    }
-}
-
-private struct PickedMovie: Transferable {
-    let url: URL
-
-    static var transferRepresentation: some TransferRepresentation {
-        FileRepresentation(contentType: .movie) { movie in
-            SentTransferredFile(movie.url)
-        } importing: { received in
-            let copy = FileManager.default.temporaryDirectory
-                .appendingPathComponent(UUID().uuidString)
-                .appendingPathExtension(received.file.pathExtension)
-            try FileManager.default.copyItem(at: received.file, to: copy)
-            return PickedMovie(url: copy)
-        }
-    }
 }

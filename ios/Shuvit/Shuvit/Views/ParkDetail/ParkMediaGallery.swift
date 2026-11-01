@@ -47,16 +47,7 @@ struct ParkMediaGallery: View {
                 }
             }
             .frame(minHeight: 100)
-            .clipShape(RoundedRectangle(cornerRadius: 6))
-
-            if item.mediaType == "video" {
-                Image(systemName: "play.circle.fill")
-                    .font(.title3)
-                    .foregroundStyle(.white)
-                    .shadow(radius: 2)
-                    .padding(6)
-            }
-        }
+            .clipShape(RoundedRectangle(cornerRadius: 6))        }
     }
 
     private var placeholder: some View {

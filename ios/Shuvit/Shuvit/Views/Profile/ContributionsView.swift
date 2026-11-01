@@ -17,7 +17,7 @@ struct ContributionsView: View {
                     Text("No contributions yet")
                         .font(.headline)
 
-                    Text("Submit photos and videos to skateparks\nto see them here.")
+                    Text("Submit photos of skateparks\nto see them here.")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)

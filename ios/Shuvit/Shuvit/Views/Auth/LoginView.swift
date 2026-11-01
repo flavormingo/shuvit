@@ -18,7 +18,7 @@ struct LoginView: View {
                     Text("Shuvit")
                         .font(.largeTitle.weight(.bold))
 
-                    Text("Sign in to save favorites\nand submit media")
+                    Text("Sign in to save favorites\nand submit photos")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)

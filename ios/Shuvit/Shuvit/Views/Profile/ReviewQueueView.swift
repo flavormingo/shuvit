@@ -1,4 +1,3 @@
-import AVKit
 import SwiftUI
 
 struct ReviewQueueView: View {
@@ -66,20 +65,15 @@ struct ReviewQueueView: View {
         .padding(.vertical, 8)
     }
 
-    @ViewBuilder
     private func preview(_ item: ReviewItem) -> some View {
-        if item.mediaType == "video", let url = item.fullFileURL {
-            VideoPlayer(player: AVPlayer(url: url))
-        } else {
-            AsyncImage(url: item.fullFileURL) { phase in
-                switch phase {
-                case .success(let image):
-                    image.resizable().aspectRatio(contentMode: .fit)
-                case .failure:
-                    Image(systemName: "photo").foregroundStyle(.secondary)
-                default:
-                    ProgressView()
-                }
+        AsyncImage(url: item.fullFileURL) { phase in
+            switch phase {
+            case .success(let image):
+                image.resizable().aspectRatio(contentMode: .fit)
+            case .failure:
+                Image(systemName: "photo").foregroundStyle(.secondary)
+            default:
+                ProgressView()
             }
         }
     }

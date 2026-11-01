@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     CORS_ORIGINS: str = "https://shuvit.app,https://www.shuvit.app"
     MAX_IMAGE_SIZE: int = 20 * 1024 * 1024
     MAX_VIDEO_SIZE: int = 50 * 1024 * 1024
+    ALLOW_VIDEO_UPLOADS: bool = False
     MAGIC_LINK_EXPIRE_MINUTES: int = 15
     MAGIC_LINK_RATE_LIMIT_SECONDS: int = 60
 

@@ -7,6 +7,8 @@ import pillow_heif
 import pytest
 from PIL import Image
 
+from app.config import settings
+
 
 def jpeg_with_gps() -> bytes:
     gps = {piexif.GPSIFD.GPSLatitudeRef: b"N", piexif.GPSIFD.GPSLatitude: ((29, 1), (45, 1), (0, 1))}
@@ -78,7 +80,8 @@ async def test_bad_files_get_400_and_leave_nothing_behind(client, login, park_id
 
 
 @pytest.mark.skipif(not shutil.which("ffmpeg"), reason="ffmpeg not installed")
-async def test_video_gets_thumbnail_and_loses_metadata(client, login, park_id, media_dir, tmp_path):
+async def test_video_gets_thumbnail_and_loses_metadata(client, login, park_id, media_dir, tmp_path, monkeypatch):
+    monkeypatch.setattr(settings, "ALLOW_VIDEO_UPLOADS", True)
     source = tmp_path / "in.mov"
     subprocess.run(
         ["ffmpeg", "-loglevel", "error", "-f", "lavfi", "-i", "testsrc=duration=1:size=320x240",
@@ -93,6 +96,14 @@ async def test_video_gets_thumbnail_and_loses_metadata(client, login, park_id, m
     assert body["media_type"] == "video" and body["file_url"].endswith(".mp4")
     assert stored(media_dir, body["thumbnail_url"]).stat().st_size > 0
     assert b"+29.7" not in stored(media_dir, body["file_url"]).read_bytes()
+
+
+async def test_videos_are_rejected_by_default(client, login, park_id, media_dir):
+    video = b"\x00\x00\x00\x18ftypisom" + b"\x00" * 100
+    response = await upload(client, park_id, await login("a@example.com"), video, "clip.mp4", "video/mp4")
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Only photos can be uploaded right now."
+    assert not (media_dir / park_id).exists() or not list((media_dir / park_id).glob("*"))
 
 
 async def test_heic_avatar_works_and_replaces_old_file(client, login, media_dir):

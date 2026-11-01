@@ -1,4 +1,3 @@
-import AVKit
 import SwiftUI
 
 struct MediaCarouselView: View {
@@ -32,26 +31,21 @@ struct MediaCarouselView: View {
                         VStack(spacing: 0) {
                             Spacer()
 
-                            if item.mediaType == "video", let url = item.fullFileURL {
-                                InlineVideoPlayer(url: url, isActive: index == currentIndex)
-                                    .aspectRatio(16 / 9, contentMode: .fit)
-                            } else {
-                                AsyncImage(url: item.fullFileURL) { phase in
-                                    switch phase {
-                                    case .success(let image):
-                                        image
-                                            .resizable()
-                                            .aspectRatio(contentMode: .fit)
-                                    case .failure:
-                                        Image(systemName: "photo")
-                                            .font(.largeTitle)
-                                            .foregroundStyle(.gray)
-                                    case .empty:
-                                        ProgressView()
-                                            .tint(.white)
-                                    @unknown default:
-                                        EmptyView()
-                                    }
+                            AsyncImage(url: item.fullFileURL) { phase in
+                                switch phase {
+                                case .success(let image):
+                                    image
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fit)
+                                case .failure:
+                                    Image(systemName: "photo")
+                                        .font(.largeTitle)
+                                        .foregroundStyle(.gray)
+                                case .empty:
+                                    ProgressView()
+                                        .tint(.white)
+                                @unknown default:
+                                    EmptyView()
                                 }
                             }
 
@@ -143,7 +137,7 @@ struct MediaCarouselView: View {
                 }
                 Button("Cancel", role: .cancel) {}
             } message: {
-                Text("You won't see their photos and videos anymore.")
+                Text("You won't see their photos anymore.")
             }
             .alert(notice ?? "", isPresented: Binding(get: { notice != nil }, set: { if !$0 { notice = nil } })) {
                 Button("OK") {}
@@ -178,23 +172,5 @@ struct MediaCarouselView: View {
         } catch {
             notice = error.localizedDescription
         }
-    }
-}
-
-private struct InlineVideoPlayer: View {
-    let isActive: Bool
-    @State private var player: AVPlayer
-
-    init(url: URL, isActive: Bool) {
-        self.isActive = isActive
-        self._player = State(initialValue: AVPlayer(url: url))
-    }
-
-    var body: some View {
-        VideoPlayer(player: player)
-            .onChange(of: isActive) { _, active in
-                if !active { player.pause() }
-            }
-            .onDisappear { player.pause() }
     }
 }

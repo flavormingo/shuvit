@@ -197,7 +197,7 @@ struct ProfileView: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("This permanently deletes your account, favorites, photos and videos. It can't be undone.")
+            Text("This permanently deletes your account, favorites and photos. It can't be undone.")
         }
         .alert(errorMessage ?? "", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
             Button("OK") {}
