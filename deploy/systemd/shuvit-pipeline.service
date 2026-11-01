@@ -1,0 +1,13 @@
+[Unit]
+Description=Shuvit Data Pipeline Scraper
+After=network.target postgresql.service
+
+[Service]
+Type=oneshot
+User=shuvit
+Group=shuvit
+WorkingDirectory=/opt/shuvit/pipeline
+EnvironmentFile=/opt/shuvit/.env
+ExecStart=/opt/shuvit/pipeline/.venv/bin/python -m pipeline.scraper.main scrape --source all
+StandardOutput=journal
+StandardError=journal

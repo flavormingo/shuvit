@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>API_BASE_URL</key>
+	<string>$(API_BASE_URL)</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Shuvit uses your location to show nearby skateparks.</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>shuvit</string>
+			</array>
+			<key>CFBundleURLName</key>
+			<string>app.shuvit.ios</string>
+		</dict>
+	</array>
+</dict>
+</plist>

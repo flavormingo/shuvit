@@ -1,0 +1,25 @@
+[Unit]
+Description=Shuvit API Server
+After=network.target postgresql.service redis-server.service
+Requires=postgresql.service
+
+[Service]
+Type=exec
+User=shuvit
+Group=shuvit
+WorkingDirectory=/opt/shuvit/backend
+EnvironmentFile=/opt/shuvit/.env
+ExecStart=/opt/shuvit/backend/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4 --log-level info
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/shuvit/media
+
+[Install]
+WantedBy=multi-user.target
