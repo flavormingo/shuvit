@@ -11,7 +11,7 @@ struct ParkPill: View {
             Text(text)
         }
         .font(.caption.weight(.medium))
-        .foregroundStyle(inverted ? .white : .primary)
+        .foregroundStyle(inverted ? Color(.systemBackground) : Color.primary)
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
         .background(inverted ? Color.primary : Color(.systemGray6), in: Capsule())

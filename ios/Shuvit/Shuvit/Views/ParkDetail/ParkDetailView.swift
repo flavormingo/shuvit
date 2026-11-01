@@ -82,6 +82,10 @@ struct ParkDetailView: View {
                             .padding(.vertical, 12)
                             .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 10))
                     }
+
+                    Link("Park data © OpenStreetMap contributors", destination: AppConfig.osmCopyrightURL)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
                 }
                 .padding(20)
             }
@@ -267,7 +271,9 @@ struct ParkDetailView: View {
             Text("Photos & Videos")
                 .font(.headline)
 
-            ParkMediaGallery(media: media)
+            ParkMediaGallery(media: media) {
+                Task { await viewModel.load() }
+            }
         }
     }
 }

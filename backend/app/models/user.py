@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, String, func
+from sqlalchemy import Boolean, DateTime, Integer, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -37,6 +37,7 @@ class MagicLinkToken(Base):
         DateTime(timezone=True), nullable=False
     )
     used: Mapped[bool] = mapped_column(Boolean, default=False)
+    attempts: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

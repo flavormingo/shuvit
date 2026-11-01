@@ -10,23 +10,25 @@
 		00FBE2A503383CE7311C2950 /* FavoritesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8E00E5D71BB86625EA038C7 /* FavoritesViewModel.swift */; };
 		0112744ECBF4B4331E1D92EF /* LocationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C737FE896B8211C0EAF06212 /* LocationManager.swift */; };
 		09CCEC88FD3CDEBB088C7FCE /* MapViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEA83E55927C256697C55524 /* MapViewModel.swift */; };
-		0A1B4528C6366FC3DA37D055 /* ParkPill.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8D24FCAB0C3DFCFDC4E1339 /* ParkPill.swift */; };
 		0EBEF04D88CED54306731347 /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = D62257B357DEAC052B67F6EB /* AppConfig.swift */; };
 		23C4BEC9C4A68630AF5EDE61 /* ContributorProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D5A02CF113549644211AA83 /* ContributorProfileView.swift */; };
 		25DE791D0F19CABB4F3389B7 /* ParkMediaGallery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F20214F92721594962A01BB /* ParkMediaGallery.swift */; };
+		2931D25ED06635CD7030A5E8 /* ParkPill.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8368AED476FF4AC767C21A8C /* ParkPill.swift */; };
 		2CB42160A112513DE3BC36A5 /* AuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5432FCBDA85EBD17E3B6892 /* AuthViewModel.swift */; };
 		2FD29D6A03C94C54FF5A9EFC /* KeychainHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83FFBEE08E9FD823F2E80507 /* KeychainHelper.swift */; };
 		3169A9448B615CF96F0CEA5B /* SubmitMediaSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 168B44A1AD7A39FCB60F61E5 /* SubmitMediaSheet.swift */; };
 		3A2A32B2E6D31F3643C3D2C7 /* Endpoints.swift in Sources */ = {isa = PBXBuildFile; fileRef = 175B91234E12D6B6064B177E /* Endpoints.swift */; };
 		3CBB06D155F5FD178A5C9361 /* ParkMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39ABE706D6948ED8413D549F /* ParkMapView.swift */; };
+		5273957C65D57D8B46F4FDE3 /* ReviewQueueView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10BC682052C878DF654766DF /* ReviewQueueView.swift */; };
 		55958D5A0654AF7ECF2D2DCA /* NameSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9911E62D4384A2C386D5048D /* NameSetupView.swift */; };
 		55EA62F7E1799572CC5230F0 /* Skatepark.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7054026E4D3B6000287C0E4A /* Skatepark.swift */; };
 		58367E2835972040619173D3 /* ShuvitApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52B1BC46455EDC2CE57F0EDB /* ShuvitApp.swift */; };
 		590B361E44C0C0E3EE5C0A26 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 16D919E89E424DC1AD81C9E0 /* Assets.xcassets */; };
 		5AE60222E3140FF010932818 /* UserSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39D8FAE50085FE94DCCFDB86 /* UserSettings.swift */; };
+		63FFF5E0BEB53BD5A667C94C /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 3E246B3722AE25367D7303AC /* PrivacyInfo.xcprivacy */; };
 		6435D53A80B0056ADBBAF1D1 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A47A4638935305574CF179B /* ProfileView.swift */; };
+		79D57AE060A7E648A171F83E /* FlowLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EB50871DC0768887C4DD721 /* FlowLayout.swift */; };
 		879602D0709FDCF773BB0CDE /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80B1FB8019D1731CBE1E6D3A /* APIClient.swift */; };
-		89113A97BA52AA4FF6365796 /* FlowLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 946CBCBCBD65374A3EDD33F7 /* FlowLayout.swift */; };
 		9D9B1F72B1428E426A8874DB /* ContributionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34A1DACF3A063DED4CDF1EE3 /* ContributionsView.swift */; };
 		A84B130034EBCAA1226B2FC8 /* MediaSubmission.swift in Sources */ = {isa = PBXBuildFile; fileRef = 305EDCF0FB3CF715A1A9BE0C /* MediaSubmission.swift */; };
 		BE887B9D29CAC933C8169881 /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = 354FB5665788E4C33B62EF54 /* User.swift */; };
@@ -39,6 +41,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		10BC682052C878DF654766DF /* ReviewQueueView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewQueueView.swift; sourceTree = "<group>"; };
 		168B44A1AD7A39FCB60F61E5 /* SubmitMediaSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubmitMediaSheet.swift; sourceTree = "<group>"; };
 		16D919E89E424DC1AD81C9E0 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		175B91234E12D6B6064B177E /* Endpoints.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Endpoints.swift; sourceTree = "<group>"; };
@@ -49,6 +52,8 @@
 		39ABE706D6948ED8413D549F /* ParkMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParkMapView.swift; sourceTree = "<group>"; };
 		39D8FAE50085FE94DCCFDB86 /* UserSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserSettings.swift; sourceTree = "<group>"; };
 		3A47A4638935305574CF179B /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
+		3E246B3722AE25367D7303AC /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		3EB50871DC0768887C4DD721 /* FlowLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlowLayout.swift; sourceTree = "<group>"; };
 		421F0253C09757086DAA4EE5 /* AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
 		4F20214F92721594962A01BB /* ParkMediaGallery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParkMediaGallery.swift; sourceTree = "<group>"; };
 		52B1BC46455EDC2CE57F0EDB /* ShuvitApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShuvitApp.swift; sourceTree = "<group>"; };
@@ -57,12 +62,11 @@
 		7054026E4D3B6000287C0E4A /* Skatepark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Skatepark.swift; sourceTree = "<group>"; };
 		716930D6DFEE3F62D2249F34 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		80B1FB8019D1731CBE1E6D3A /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
+		8368AED476FF4AC767C21A8C /* ParkPill.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParkPill.swift; sourceTree = "<group>"; };
 		83FFBEE08E9FD823F2E80507 /* KeychainHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainHelper.swift; sourceTree = "<group>"; };
 		8ECAC8911A2AC27EF2DC71ED /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
-		946CBCBCBD65374A3EDD33F7 /* FlowLayout.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FlowLayout.swift; sourceTree = "<group>"; };
 		9911E62D4384A2C386D5048D /* NameSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NameSetupView.swift; sourceTree = "<group>"; };
 		A5432FCBDA85EBD17E3B6892 /* AuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViewModel.swift; sourceTree = "<group>"; };
-		A8D24FCAB0C3DFCFDC4E1339 /* ParkPill.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ParkPill.swift; sourceTree = "<group>"; };
 		C737FE896B8211C0EAF06212 /* LocationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationManager.swift; sourceTree = "<group>"; };
 		CBE1000D0F581033CDE67035 /* FavoritesListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoritesListView.swift; sourceTree = "<group>"; };
 		CEA83E55927C256697C55524 /* MapViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapViewModel.swift; sourceTree = "<group>"; };
@@ -78,18 +82,9 @@
 			children = (
 				34A1DACF3A063DED4CDF1EE3 /* ContributionsView.swift */,
 				3A47A4638935305574CF179B /* ProfileView.swift */,
+				10BC682052C878DF654766DF /* ReviewQueueView.swift */,
 			);
 			path = Profile;
-			sourceTree = "<group>";
-		};
-		2B9E068E05FB871BA77A860B /* Components */ = {
-			isa = PBXGroup;
-			children = (
-				A8D24FCAB0C3DFCFDC4E1339 /* ParkPill.swift */,
-				946CBCBCBD65374A3EDD33F7 /* FlowLayout.swift */,
-			);
-			name = Components;
-			path = Components;
 			sourceTree = "<group>";
 		};
 		36FF288267A88438DC449627 /* ViewModels */ = {
@@ -109,6 +104,15 @@
 				F8F81A58911DF47E022D7D67 /* Shuvit.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		489ACF38E8233F2ECCA1FB32 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				3EB50871DC0768887C4DD721 /* FlowLayout.swift */,
+				8368AED476FF4AC767C21A8C /* ParkPill.swift */,
+			);
+			path = Components;
 			sourceTree = "<group>";
 		};
 		5CB6EDD83C9C75329D986F1D /* Models */ = {
@@ -179,6 +183,7 @@
 			children = (
 				16D919E89E424DC1AD81C9E0 /* Assets.xcassets */,
 				8ECAC8911A2AC27EF2DC71ED /* Info.plist */,
+				3E246B3722AE25367D7303AC /* PrivacyInfo.xcprivacy */,
 				52B1BC46455EDC2CE57F0EDB /* ShuvitApp.swift */,
 				D60A133F7712B96A4B0D2B82 /* Configuration */,
 				5CB6EDD83C9C75329D986F1D /* Models */,
@@ -211,12 +216,12 @@
 			isa = PBXGroup;
 			children = (
 				E569416F9C014496B092C9FC /* Auth */,
+				489ACF38E8233F2ECCA1FB32 /* Components */,
 				D2C0FFC76FF6C697AE9D8BFE /* Contributor */,
 				CA09ACA57BF58C43E7F03E33 /* Favorites */,
 				6BF7399F475C90751A9115F7 /* MapView */,
 				A4F8FE8170F287C5FC619732 /* ParkDetail */,
 				11983721ECB0EB9EC2E095DA /* Profile */,
-				2B9E068E05FB871BA77A860B /* Components */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -246,6 +251,8 @@
 			dependencies = (
 			);
 			name = Shuvit;
+			packageProductDependencies = (
+			);
 			productName = Shuvit;
 			productReference = F8F81A58911DF47E022D7D67 /* Shuvit.app */;
 			productType = "com.apple.product-type.application";
@@ -289,6 +296,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				590B361E44C0C0E3EE5C0A26 /* Assets.xcassets in Resources */,
+				63FFF5E0BEB53BD5A667C94C /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -308,6 +316,7 @@
 				3A2A32B2E6D31F3643C3D2C7 /* Endpoints.swift in Sources */,
 				F889C56E08CACC813DDA0CF8 /* FavoritesListView.swift in Sources */,
 				00FBE2A503383CE7311C2950 /* FavoritesViewModel.swift in Sources */,
+				79D57AE060A7E648A171F83E /* FlowLayout.swift in Sources */,
 				2FD29D6A03C94C54FF5A9EFC /* KeychainHelper.swift in Sources */,
 				0112744ECBF4B4331E1D92EF /* LocationManager.swift in Sources */,
 				E29F054D40B5C7691A2AD5EC /* LoginView.swift in Sources */,
@@ -319,14 +328,14 @@
 				C5AD636A655CEB8FE0935551 /* ParkDetailViewModel.swift in Sources */,
 				3CBB06D155F5FD178A5C9361 /* ParkMapView.swift in Sources */,
 				25DE791D0F19CABB4F3389B7 /* ParkMediaGallery.swift in Sources */,
+				2931D25ED06635CD7030A5E8 /* ParkPill.swift in Sources */,
 				6435D53A80B0056ADBBAF1D1 /* ProfileView.swift in Sources */,
+				5273957C65D57D8B46F4FDE3 /* ReviewQueueView.swift in Sources */,
 				58367E2835972040619173D3 /* ShuvitApp.swift in Sources */,
 				55EA62F7E1799572CC5230F0 /* Skatepark.swift in Sources */,
 				3169A9448B615CF96F0CEA5B /* SubmitMediaSheet.swift in Sources */,
 				BE887B9D29CAC933C8169881 /* User.swift in Sources */,
 				5AE60222E3140FF010932818 /* UserSettings.swift in Sources */,
-				0A1B4528C6366FC3DA37D055 /* ParkPill.swift in Sources */,
-				89113A97BA52AA4FF6365796 /* FlowLayout.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

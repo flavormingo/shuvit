@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ParkMediaGallery: View {
     let media: [MediaItem]
+    var onUserBlocked: () -> Void = {}
     @State private var showingCarousel = false
     @State private var selectedIndex = 0
 
@@ -23,7 +24,7 @@ struct ParkMediaGallery: View {
             }
         }
         .fullScreenCover(isPresented: $showingCarousel) {
-            MediaCarouselView(media: media, currentIndex: selectedIndex)
+            MediaCarouselView(media: media, currentIndex: selectedIndex, onUserBlocked: onUserBlocked)
         }
     }
 

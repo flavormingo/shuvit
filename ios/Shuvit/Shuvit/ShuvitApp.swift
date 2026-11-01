@@ -40,7 +40,7 @@ struct ContentView: View {
                 }
                 .tag(2)
         }
-        .tint(.black)
+        .tint(.primary)
     }
 }
 

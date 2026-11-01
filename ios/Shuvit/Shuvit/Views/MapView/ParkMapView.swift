@@ -12,6 +12,9 @@ struct ParkMapView: View {
     @State private var filterType: String?
     @State private var filterEnvironment: String?
     @State private var filterPrice: String?
+    @State private var currentRegion: MKCoordinateRegion?
+    @State private var hasSetInitialCamera = false
+    @State private var hasCenteredOnUser = false
     @FocusState private var searchFocused: Bool
 
     private var activeFilterCount: Int {
@@ -30,8 +33,15 @@ struct ParkMapView: View {
         }
     }
 
-    // Default to Houston, TX
-    private let houstonCenter = CLLocationCoordinate2D(latitude: 29.7604, longitude: -95.3698)
+    // Shown until we know where the user is, or if they decline location access.
+    private let fallbackCenter = CLLocationCoordinate2D(latitude: 29.7604, longitude: -95.3698)
+
+    /// Distance from the user, not from the map's center. Nil without a location fix.
+    private func distanceKm(to park: Skatepark) -> Double? {
+        guard let user = locationManager.location else { return nil }
+        return CLLocation(latitude: user.latitude, longitude: user.longitude)
+            .distance(from: CLLocation(latitude: park.lat, longitude: park.lng)) / 1000
+    }
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -52,12 +62,22 @@ struct ParkMapView: View {
                 MapScaleView()
             }
             .onMapCameraChange(frequency: .onEnd) { context in
-                viewModel.loadNearby(center: context.camera.centerCoordinate)
+                currentRegion = context.region
+                viewModel.loadVisible(region: context.region)
             }
 
             // Bottom overlay
             VStack(spacing: 0) {
                 Spacer()
+
+                if let message = viewModel.errorMessage {
+                    Text(message)
+                        .font(.caption.weight(.medium))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(.ultraThickMaterial, in: Capsule())
+                        .padding(.bottom, 8)
+                }
 
                 if let park = selectedPark {
                     parkCard(park)
@@ -75,16 +95,30 @@ struct ParkMapView: View {
             }
         }
         .onAppear {
+            // onAppear also fires when returning to this tab; don't move the map then.
+            guard !hasSetInitialCamera else { return }
+            hasSetInitialCamera = true
             locationManager.requestPermission()
-            let center = locationManager.location ?? houstonCenter
-            cameraPosition = .region(MKCoordinateRegion(
-                center: center,
-                latitudinalMeters: 30000,
-                longitudinalMeters: 30000
-            ))
-            viewModel.loadNearby(center: center, radiusKm: 50)
+            if let location = locationManager.location { hasCenteredOnUser = true; moveCamera(to: location) }
+            else { moveCamera(to: fallbackCenter) }
+        }
+        .onChange(of: locationManager.location?.latitude) {
+            // The first fix usually arrives after the map appears. Center on it once,
+            // then leave the camera to the user.
+            guard !hasCenteredOnUser, !viewModel.isShowingSearchResults,
+                  let location = locationManager.location else { return }
+            hasCenteredOnUser = true
+            moveCamera(to: location)
         }
         .animation(.easeInOut(duration: 0.3), value: selectedPark)
+    }
+
+    private func moveCamera(to center: CLLocationCoordinate2D) {
+        cameraPosition = .region(MKCoordinateRegion(
+            center: center,
+            latitudinalMeters: 30000,
+            longitudinalMeters: 30000
+        ))
     }
 
     private var searchBar: some View {
@@ -100,14 +134,12 @@ struct ParkMapView: View {
                     .font(.body)
                     .focused($searchFocused)
                     .onSubmit {
+                        let query = searchText.trimmingCharacters(in: .whitespaces)
+                        guard !query.isEmpty else { return }
                         Task {
-                            if let center = await viewModel.search(query: searchText) {
+                            if let region = await viewModel.search(query: query) {
                                 withAnimation {
-                                    cameraPosition = .region(MKCoordinateRegion(
-                                        center: center,
-                                        latitudinalMeters: 10000,
-                                        longitudinalMeters: 10000
-                                    ))
+                                    cameraPosition = .region(region)
                                 }
                             }
                         }
@@ -116,6 +148,8 @@ struct ParkMapView: View {
                 if !searchText.isEmpty {
                     Button {
                         searchText = ""
+                        selectedPark = nil
+                        viewModel.clearSearch(region: currentRegion)
                     } label: {
                         Image(systemName: "xmark.circle.fill")
                             .font(.body)
@@ -133,7 +167,7 @@ struct ParkMapView: View {
                     ZStack(alignment: .topTrailing) {
                         Image(systemName: "slider.horizontal.3")
                             .font(.body.weight(.medium))
-                            .foregroundStyle(showFilters || activeFilterCount > 0 ? .white : .secondary)
+                            .foregroundStyle(showFilters || activeFilterCount > 0 ? Color(.systemBackground) : .secondary)
                             .frame(width: 36, height: 36)
                             .background(
                                 showFilters || activeFilterCount > 0 ? Color.primary : Color(.systemGray5),
@@ -226,10 +260,10 @@ struct ParkMapView: View {
 
     private func parkCard(_ park: SkateparkNear) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            if let distance = park.distanceKm, distance > 0 {
+            if let distance = distanceKm(to: park) {
                 Text(UserSettings.shared.formatDistance(km: distance))
                     .font(.caption.weight(.medium))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Color(.systemBackground))
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
                     .background(Color.primary, in: Capsule())
@@ -273,8 +307,8 @@ struct ParkMapView: View {
                         .font(.subheadline.weight(.semibold))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
-                        .background(.tint, in: RoundedRectangle(cornerRadius: 10))
-                        .foregroundStyle(.white)
+                        .background(Color.primary, in: RoundedRectangle(cornerRadius: 10))
+                        .foregroundStyle(Color(.systemBackground))
                 }
 
                 Button {

@@ -134,6 +134,43 @@ async def get_nearby(
     ]
 
 
+async def get_in_bounds(
+    db: AsyncSession,
+    south: float,
+    west: float,
+    north: float,
+    east: float,
+    limit: int = 300,
+) -> list[dict]:
+    """Parks inside a map viewport. The best-documented parks win when there are too many."""
+    from sqlalchemy import text
+
+    # A viewport crossing the antimeridian has west > east and needs two boxes.
+    boxes = [(west, east)] if west <= east else [(west, 180.0), (-180.0, east)]
+    condition = " OR ".join(
+        f"geom && ST_MakeEnvelope(:w{i}, :south, :e{i}, :north, 4326)" for i in range(len(boxes))
+    )
+    params: dict = {"south": south, "north": north, "limit": limit}
+    for i, (box_west, box_east) in enumerate(boxes):
+        params[f"w{i}"] = box_west
+        params[f"e{i}"] = box_east
+
+    query = text(f"""
+        SELECT
+            id, name, slug,
+            ST_Y(geom) as lat,
+            ST_X(geom) as lng,
+            city, state, country, park_type, environment, rating, difficulty,
+            is_free, hero_image_url, verified
+        FROM skateparks
+        WHERE {condition}
+        ORDER BY data_quality_score DESC NULLS LAST, id
+        LIMIT :limit
+    """)
+    rows = (await db.execute(query, params)).mappings().all()
+    return [dict(row) for row in rows]
+
+
 async def get_park(db: AsyncSession, park_id: uuid.UUID) -> dict | None:
     query = select(
         Skatepark,

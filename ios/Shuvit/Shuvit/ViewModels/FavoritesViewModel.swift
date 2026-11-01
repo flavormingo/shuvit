@@ -9,7 +9,10 @@ final class FavoritesViewModel {
     var errorMessage: String?
 
     func load() async {
-        guard AuthManager.shared.isAuthenticated else { return }
+        guard AuthManager.shared.isAuthenticated else {
+            favorites = []
+            return
+        }
         isLoading = true
         errorMessage = nil
 

@@ -34,6 +34,37 @@ struct MediaItem: Codable, Identifiable, Hashable {
     }
 }
 
+/// A submission waiting for an admin, or approved media that someone reported.
+struct ReviewItem: Codable, Identifiable {
+    let id: UUID
+    let parkId: UUID
+    let parkName: String
+    let userId: UUID
+    let contributorName: String?
+    let mediaType: String
+    let fileUrl: String
+    let thumbnailUrl: String?
+    let description: String?
+    let status: String
+    let reportCount: Int
+
+    var fullFileURL: URL? {
+        URL(string: AppConfig.apiBaseURL + fileUrl)
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, description, status
+        case parkId = "park_id"
+        case parkName = "park_name"
+        case userId = "user_id"
+        case contributorName = "contributor_name"
+        case mediaType = "media_type"
+        case fileUrl = "file_url"
+        case thumbnailUrl = "thumbnail_url"
+        case reportCount = "report_count"
+    }
+}
+
 struct Favorite: Codable, Identifiable {
     let id: UUID
     let parkId: UUID

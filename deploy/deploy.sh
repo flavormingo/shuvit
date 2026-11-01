@@ -40,7 +40,11 @@ echo "Syncing pipeline..."
 rsync -az --delete "${RSYNC_EXCLUDES[@]}" \
     pipeline/ "${VPS_HOST}:${REMOTE_DIR}/pipeline/"
 
+echo "Syncing website..."
+rsync -az --delete --exclude '.DS_Store' site/ "${VPS_HOST}:${REMOTE_DIR}/site/"
+
 echo "Installing system files..."
+scp -q deploy/nginx/shuvit.conf "${VPS_HOST}:/etc/nginx/sites-available/shuvit"
 scp -q deploy/backup.sh "${VPS_HOST}:/usr/local/bin/shuvit-backup"
 scp -q deploy/systemd/shuvit-api.service deploy/systemd/shuvit-backup.service \
     deploy/systemd/shuvit-backup.timer deploy/systemd/shuvit-pipeline.service \
@@ -50,6 +54,9 @@ echo "Installing dependencies and running migrations..."
 ssh "${VPS_HOST}" << 'REMOTE'
 set -euo pipefail
 chmod 700 /usr/local/bin/shuvit-backup
+nginx -t -q
+systemctl reload nginx
+command -v ffmpeg >/dev/null || apt-get install -y -qq ffmpeg
 
 cd /opt/shuvit/backend
 python3.12 -m venv .venv 2>/dev/null || true

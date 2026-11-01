@@ -1,12 +1,17 @@
-from pydantic import BaseModel, EmailStr
+from typing import Annotated
+
+from pydantic import AfterValidator, BaseModel, EmailStr
+
+# Foo@x.com and foo@x.com must be the same account.
+NormalizedEmail = Annotated[EmailStr, AfterValidator(str.lower)]
 
 
 class MagicLinkRequest(BaseModel):
-    email: EmailStr
+    email: NormalizedEmail
 
 
 class VerifyOTPRequest(BaseModel):
-    email: EmailStr
+    email: NormalizedEmail
     code: str
 
 

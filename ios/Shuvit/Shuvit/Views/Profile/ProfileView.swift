@@ -10,6 +10,9 @@ struct ProfileView: View {
     @State private var selectedPhoto: PhotosPickerItem?
     @State private var showingPhotoPicker = false
     @State private var isUploadingAvatar = false
+    @State private var confirmingDelete = false
+    @State private var isDeleting = false
+    @State private var errorMessage: String?
 
     var body: some View {
         NavigationStack {
@@ -140,6 +143,14 @@ struct ProfileView: View {
                 } label: {
                     Label("Contributions", systemImage: "photo.on.rectangle.angled")
                 }
+
+                if AuthManager.shared.currentUser?.isAdmin == true {
+                    NavigationLink {
+                        ReviewQueueView()
+                    } label: {
+                        Label("Review Queue", systemImage: "checkmark.shield")
+                    }
+                }
             }
 
             Section {
@@ -157,8 +168,10 @@ struct ProfileView: View {
                     .frame(width: 100)
                 }
 
-                LabeledContent("Version", value: "1.0.0")
+                LabeledContent("Version", value: AppConfig.appVersion)
             }
+
+            legalSection
 
             Section {
                 Button(role: .destructive) {
@@ -167,7 +180,29 @@ struct ProfileView: View {
                 } label: {
                     Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
                 }
+
+                Button(role: .destructive) {
+                    confirmingDelete = true
+                } label: {
+                    if isDeleting {
+                        ProgressView()
+                    } else {
+                        Label("Delete Account", systemImage: "trash")
+                    }
+                }
+                .disabled(isDeleting)
             }
+        }
+        .alert("Delete your account?", isPresented: $confirmingDelete) {
+            Button("Delete Forever", role: .destructive) {
+                Task { await deleteAccount() }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This permanently deletes your account, favorites, photos and videos. It can't be undone.")
+        }
+        .alert(errorMessage ?? "", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
+            Button("OK") {}
         }
         .task {
             await AuthManager.shared.fetchUser()
@@ -191,21 +226,38 @@ struct ProfileView: View {
     }
 
     private var signedOutView: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "person.circle")
-                .font(.system(size: 64))
-                .foregroundStyle(.secondary)
-                .frame(height: 70)
+        List {
+            Section {
+                VStack(spacing: 20) {
+                    Image(systemName: "person.circle")
+                        .font(.system(size: 64))
+                        .foregroundStyle(.secondary)
+                        .frame(height: 70)
 
-            Text("Not signed in")
-                .font(.headline)
+                    Text("Not signed in")
+                        .font(.headline)
 
-            Button("Sign In") {
-                showingLogin = true
+                    Button("Sign In") {
+                        showingLogin = true
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.black)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 24)
             }
-            .buttonStyle(.borderedProminent)
-            .tint(.black)
+
+            legalSection
         }
+    }
+
+    private var legalSection: some View {
+        Section {
+            Link("Terms of Service", destination: AppConfig.termsURL)
+            Link("Privacy Policy", destination: AppConfig.privacyURL)
+            Link("Park data © OpenStreetMap contributors", destination: AppConfig.osmCopyrightURL)
+        }
+        .foregroundStyle(.primary)
     }
 
     private var avatarPlaceholder: some View {
@@ -237,22 +289,45 @@ struct ProfileView: View {
     private func saveName() async {
         let trimmed = newName.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return }
-        let _: User? = try? await APIClient.shared.request(.updateMe(displayName: trimmed))
-        await AuthManager.shared.fetchUser()
+        do {
+            let _: User = try await APIClient.shared.request(.updateMe(displayName: trimmed))
+            await AuthManager.shared.fetchUser()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 
     private func uploadAvatar(item: PhotosPickerItem?) async {
-        guard let item, let data = try? await item.loadTransferable(type: Data.self) else { return }
+        guard let item else { return }
 
         isUploadingAvatar = true
-        let _: User? = try? await APIClient.shared.upload(
-            path: "/user/me/avatar",
-            fileData: data,
-            fileName: "avatar.jpg",
-            mimeType: "image/jpeg"
-        )
-        await AuthManager.shared.fetchUser()
-        isUploadingAvatar = false
+        defer { isUploadingAvatar = false }
+
+        do {
+            guard let data = try await item.loadTransferable(type: Data.self) else { return }
+            let _: User = try await APIClient.shared.upload(
+                path: "/user/me/avatar",
+                fileData: data,
+                fileName: "avatar.jpg",
+                mimeType: "image/jpeg"
+            )
+            await AuthManager.shared.fetchUser()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func deleteAccount() async {
+        isDeleting = true
+        defer { isDeleting = false }
+
+        do {
+            try await APIClient.shared.send(.deleteAccount)
+            AuthManager.shared.logout()
+            stats = nil
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 }
 

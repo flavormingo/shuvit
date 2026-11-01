@@ -1,17 +1,18 @@
 import uuid
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
 from app.database import get_db
 from app.models.media import MediaSubmission
+from app.models.moderation import UserBlock
 from app.models.skatepark import Skatepark
-from app.models.user import User
-from app.schemas.media import MediaSubmissionOut
+from app.models.user import MagicLinkToken, User
 from app.schemas.user import UserOut, UserProfile, UserUpdate
-from app.utils.storage import save_upload, validate_upload
+from app.utils.storage import InvalidUpload, delete_media_file, store_avatar
 
 router = APIRouter(prefix="/user", tags=["user"])
 
@@ -63,17 +64,68 @@ async def upload_avatar(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    file_bytes = await file.read()
-    content_type = file.content_type or "application/octet-stream"
+    try:
+        file_url = await store_avatar(await file.read())
+    except InvalidUpload as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
 
-    error = validate_upload(content_type, len(file_bytes))
-    if error:
-        raise HTTPException(status_code=400, detail=error)
-
-    file_url, _ = await save_upload(file_bytes, content_type, "avatars")
+    previous = user.avatar_url
     user.avatar_url = file_url
-    await db.flush()
+    await db.commit()
+    delete_media_file(previous)
     return user
+
+
+@router.delete("/me", status_code=204)
+async def delete_me(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Permanently delete the account, its contributions and their files."""
+    rows = await db.execute(
+        select(MediaSubmission.file_url, MediaSubmission.thumbnail_url).where(
+            MediaSubmission.user_id == user.id
+        )
+    )
+    files = [url for row in rows.all() for url in row]
+    files.append(user.avatar_url)
+
+    await db.execute(delete(MagicLinkToken).where(MagicLinkToken.email == user.email))
+    await db.delete(user)
+    # Commit first: a stray file is harmless, a user pointing at missing files isn't.
+    await db.commit()
+
+    for url in files:
+        delete_media_file(url)
+
+
+@router.post("/{user_id}/block", status_code=204)
+async def block_user(
+    user_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    if user_id == user.id:
+        raise HTTPException(status_code=400, detail="You can't block yourself")
+    if not await db.scalar(select(User.id).where(User.id == user_id)):
+        raise HTTPException(status_code=404, detail="User not found")
+
+    await db.execute(
+        insert(UserBlock)
+        .values(id=uuid.uuid4(), blocker_id=user.id, blocked_id=user_id)
+        .on_conflict_do_nothing(constraint="uq_user_block")
+    )
+
+
+@router.delete("/{user_id}/block", status_code=204)
+async def unblock_user(
+    user_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    await db.execute(
+        delete(UserBlock).where(UserBlock.blocker_id == user.id, UserBlock.blocked_id == user_id)
+    )
 
 
 @router.get("/me/contributions")

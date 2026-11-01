@@ -8,4 +8,12 @@ enum AppConfig {
 
     static let appScheme = "shuvit"
     static let authCallbackPath = "auth"
+
+    static let privacyURL = URL(string: "https://shuvit.app/privacy")!
+    static let termsURL = URL(string: "https://shuvit.app/terms")!
+    static let osmCopyrightURL = URL(string: "https://www.openstreetmap.org/copyright")!
+
+    static var appVersion: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
+    }
 }

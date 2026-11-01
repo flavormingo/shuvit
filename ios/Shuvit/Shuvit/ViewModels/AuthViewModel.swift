@@ -11,6 +11,7 @@ final class AuthViewModel {
     var errorMessage: String?
 
     func sendCode() async {
+        email = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         guard !email.isEmpty else {
             errorMessage = "Please enter your email"
             return

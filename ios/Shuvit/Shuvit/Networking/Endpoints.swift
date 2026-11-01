@@ -61,6 +61,19 @@ extension Endpoint {
         )
     }
 
+    static func parksInBounds(south: Double, west: Double, north: Double, east: Double, limit: Int) -> Endpoint {
+        Endpoint(
+            path: "/parks/bounds",
+            queryItems: [
+                URLQueryItem(name: "south", value: "\(south)"),
+                URLQueryItem(name: "west", value: "\(west)"),
+                URLQueryItem(name: "north", value: "\(north)"),
+                URLQueryItem(name: "east", value: "\(east)"),
+                URLQueryItem(name: "limit", value: "\(limit)"),
+            ]
+        )
+    }
+
     static func parkDetail(id: UUID) -> Endpoint {
         Endpoint(path: "/parks/\(id)")
     }
@@ -100,6 +113,14 @@ extension Endpoint {
         Endpoint(path: "/user/me/contributions", requiresAuth: true)
     }
 
+    static var deleteAccount: Endpoint {
+        Endpoint(path: "/user/me", method: .delete, requiresAuth: true)
+    }
+
+    static func blockUser(id: UUID) -> Endpoint {
+        Endpoint(path: "/user/\(id)/block", method: .post, requiresAuth: true)
+    }
+
     static func userProfile(id: UUID) -> Endpoint {
         Endpoint(path: "/user/\(id)/profile")
     }
@@ -131,5 +152,19 @@ extension Endpoint {
 extension Endpoint {
     static func parkMedia(parkId: UUID) -> Endpoint {
         Endpoint(path: "/parks/\(parkId)/media")
+    }
+
+    static func reportMedia(id: UUID, reason: String) -> Endpoint {
+        let body = try? JSONEncoder().encode(["reason": reason])
+        return Endpoint(path: "/media/\(id)/report", method: .post, body: body, requiresAuth: true)
+    }
+
+    static var reviewQueue: Endpoint {
+        Endpoint(path: "/media/review-queue", requiresAuth: true)
+    }
+
+    static func reviewMedia(id: UUID, approve: Bool) -> Endpoint {
+        let body = try? JSONEncoder().encode(["action": approve ? "approve" : "reject"])
+        return Endpoint(path: "/media/\(id)/approve", method: .post, body: body, requiresAuth: true)
     }
 }

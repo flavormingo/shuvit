@@ -33,10 +33,17 @@ struct LoginView: View {
 
                 Spacer()
 
-                Text("No password needed. We'll send you a code.")
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-                    .padding(.bottom, 16)
+                VStack(spacing: 6) {
+                    Text("No password needed. We'll send you a code.")
+                        .foregroundStyle(.tertiary)
+
+                    Text("By continuing you agree to our [Terms](\(AppConfig.termsURL.absoluteString)), including no objectionable content, and [Privacy Policy](\(AppConfig.privacyURL.absoluteString)).")
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 32)
+                }
+                .font(.caption)
+                .padding(.bottom, 16)
             }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

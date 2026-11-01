@@ -16,7 +16,8 @@ apt install -y \
     ufw \
     fail2ban \
     unattended-upgrades \
-    software-properties-common
+    software-properties-common \
+    ffmpeg
 
 # PostgreSQL 16 + PostGIS
 apt install -y postgresql-16 postgresql-16-postgis-3 postgresql-client-16
@@ -38,7 +39,7 @@ apt install -y certbot python3-certbot-nginx
 # Firewall
 ufw default deny incoming
 ufw default allow outgoing
-ufw allow ssh
+ufw allow 22022/tcp
 ufw allow http
 ufw allow https
 echo "y" | ufw enable

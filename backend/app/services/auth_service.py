@@ -1,11 +1,13 @@
+import asyncio
 import hashlib
+import hmac
 import logging
 import secrets
 import string
 from datetime import datetime, timedelta, timezone
 
 import resend
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
@@ -13,6 +15,11 @@ from app.models.user import MagicLinkToken, User
 from app.utils.security import create_access_token
 
 logger = logging.getLogger(__name__)
+
+# Together these allow at most 25 guesses per email per hour against a
+# one-in-a-million code, which makes guessing one impractical.
+MAX_OTP_ATTEMPTS = 5
+MAX_CODES_PER_HOUR = 5
 
 
 def _hash(value: str) -> str:
@@ -39,6 +46,15 @@ async def request_magic_link(db: AsyncSession, email: str) -> bool:
         if age < settings.MAGIC_LINK_RATE_LIMIT_SECONDS:
             return True  # Silently succeed to avoid leaking email existence
 
+    hour_ago = datetime.now(timezone.utc) - timedelta(hours=1)
+    codes_this_hour = await db.scalar(
+        select(func.count(MagicLinkToken.id)).where(
+            MagicLinkToken.email == email, MagicLinkToken.created_at > hour_ago
+        )
+    )
+    if codes_this_hour >= MAX_CODES_PER_HOUR:
+        return True
+
     raw_token = secrets.token_urlsafe(32)
     otp_code = _generate_otp()
 
@@ -50,23 +66,28 @@ async def request_magic_link(db: AsyncSession, email: str) -> bool:
         + timedelta(minutes=settings.MAGIC_LINK_EXPIRE_MINUTES),
     )
     db.add(magic_link)
-    await db.flush()
+    # Commit before emailing so the code is valid the moment it arrives.
+    await db.commit()
 
     callback_url = f"{settings.BASE_URL}/api/v1/auth/callback?token={raw_token}&redirect=shuvit"
     expire_min = settings.MAGIC_LINK_EXPIRE_MINUTES
 
     try:
         resend.api_key = settings.RESEND_API_KEY
-        resend.Emails.send(
+        await asyncio.to_thread(
+            resend.Emails.send,
             {
                 "from": settings.RESEND_FROM_EMAIL,
                 "to": [email],
                 "subject": f"Your Shuvit code: {otp_code}",
                 "html": _build_email_html(otp_code, callback_url, expire_min),
-            }
+            },
         )
     except Exception:
         logger.exception("Failed to send auth email")
+        # Nobody received this code, so don't let it block an immediate retry.
+        magic_link.used = True
+        await db.commit()
         return False
 
     return True
@@ -93,19 +114,31 @@ async def verify_magic_link(db: AsyncSession, raw_token: str) -> str | None:
 
 async def verify_otp(db: AsyncSession, email: str, code: str) -> str | None:
     """Verify a 6-digit OTP code and return a JWT, or None if invalid."""
-    otp_hash = _hash(code)
     now = datetime.now(timezone.utc)
 
+    # Only the newest code counts. The row lock stops parallel guesses from
+    # slipping past the attempt limit.
     result = await db.execute(
-        select(MagicLinkToken).where(
+        select(MagicLinkToken)
+        .where(
             MagicLinkToken.email == email,
-            MagicLinkToken.otp_hash == otp_hash,
             MagicLinkToken.used == False,  # noqa: E712
             MagicLinkToken.expires_at > now,
         )
+        .order_by(MagicLinkToken.created_at.desc())
+        .limit(1)
+        .with_for_update()
     )
     magic_token = result.scalar_one_or_none()
-    if not magic_token:
+    if not magic_token or not magic_token.otp_hash:
+        return None
+    if magic_token.attempts >= MAX_OTP_ATTEMPTS:
+        return None
+
+    if not hmac.compare_digest(magic_token.otp_hash, _hash(code)):
+        magic_token.attempts += 1
+        # The caller raises on failure, which would roll this count back.
+        await db.commit()
         return None
 
     return await _complete_auth(db, magic_token)
@@ -127,6 +160,8 @@ async def _complete_auth(db: AsyncSession, magic_token: MagicLinkToken) -> str:
         await db.flush()
 
     user.last_login = now
+    if user.email in settings.admin_email_list:
+        user.is_admin = True
     await db.flush()
 
     return create_access_token({"sub": str(user.id), "email": user.email})

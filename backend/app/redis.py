@@ -25,6 +25,21 @@ async def get_redis() -> aioredis.Redis | None:
     return _pool
 
 
+async def is_rate_limited(key: str, limit: int, window_seconds: int) -> bool:
+    """Count one hit against a fixed window. Allows the request if Redis is down."""
+    r = await get_redis()
+    if r is None:
+        return False
+    try:
+        count = await r.incr(key)
+        if count == 1:
+            await r.expire(key, window_seconds)
+        return count > limit
+    except Exception:
+        logger.warning("Rate limit check failed for %s", key, exc_info=True)
+        return False
+
+
 def cache(prefix: str, ttl: int = 300):
     """Cache decorator for async functions. Returns cached JSON if available."""
 
