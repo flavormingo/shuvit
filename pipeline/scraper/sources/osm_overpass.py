@@ -21,6 +21,10 @@ class OverpassError(Exception):
     pass
 
 
+class OverpassUnavailable(OverpassError):
+    pass
+
+
 def build_query(bbox: tuple[float, float, float, float]) -> str:
     south, west, north, east = bbox
     area = f"({south},{west},{north},{east})"
@@ -128,6 +132,7 @@ class OverpassSource(Source):
         return parks
 
     async def _query(self, query: str) -> dict:
+        last_error: Exception | None = None
         async with httpx.AsyncClient(timeout=240, headers={"User-Agent": USER_AGENT}) as client:
             for attempt in range(1, RETRY_ATTEMPTS + 1):
                 try:
@@ -138,7 +143,15 @@ class OverpassSource(Source):
                         raise OverpassError(data["remark"])
                     return data
                 except (httpx.HTTPError, ValueError, OverpassError) as exc:
+                    last_error = exc
                     logger.warning(f"Overpass attempt {attempt} failed: {exc}")
                     if attempt < RETRY_ATTEMPTS:
                         await asyncio.sleep(attempt * 30)
+
+        is_unreachable = isinstance(last_error, (httpx.ConnectError, httpx.ConnectTimeout))
+        is_rate_limited = (
+            isinstance(last_error, httpx.HTTPStatusError) and last_error.response.status_code == 429
+        )
+        if is_unreachable or is_rate_limited:
+            raise OverpassUnavailable(str(last_error))
         raise OverpassError(f"Overpass failed after {RETRY_ATTEMPTS} attempts")

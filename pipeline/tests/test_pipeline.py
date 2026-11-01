@@ -159,3 +159,61 @@ def test_named_parks_score_above_generated_names():
     from pipeline.scraper.loader import compute_quality_score
 
     assert compute_quality_score(park("Real Park")) > compute_quality_score(park("Skatepark in Paris"))
+
+
+def test_failed_tile_is_retried_on_next_run(tmp_path):
+    import asyncio
+
+    from pipeline.scraper import world
+    from pipeline.scraper.sources.osm_overpass import OverpassError
+
+    class FlakySource:
+        def __init__(self):
+            self.healthy = False
+            self.calls = []
+
+        async def fetch(self, tile):
+            self.calls.append(tile)
+            if not self.healthy:
+                raise OverpassError("down")
+            return [park(source_id=str(tile))]
+
+    world.SECONDS_BETWEEN_QUERIES = 0
+    source = FlakySource()
+    tile = (0, 0, 7.5, 7.5)
+
+    first = world.WorldFetcher(tmp_path, source)
+    assert asyncio.run(first._fetch_tile(tile)) == []
+    assert len(first.failed_tiles) == 4
+
+    source.healthy = True
+    second = world.WorldFetcher(tmp_path, source)
+    assert asyncio.run(second._fetch_tile(tile))
+    assert second.failed_tiles == []
+
+
+def test_unavailable_overpass_stops_queries_but_keeps_cached_tiles(tmp_path):
+    import asyncio
+    import json
+
+    from pipeline.scraper.world import WorldFetcher, world_tiles
+    from pipeline.scraper.sources.osm_overpass import OverpassUnavailable
+
+    class DownSource:
+        calls = 0
+
+        async def fetch(self, tile):
+            DownSource.calls += 1
+            raise OverpassUnavailable("refused")
+
+    tiles = world_tiles()
+    fetcher = WorldFetcher(tmp_path, DownSource())
+    from dataclasses import asdict
+
+    fetcher._cache_path(tiles[1]).write_text(json.dumps([asdict(park(source_id="cached"))]))
+
+    parks = asyncio.run(fetcher.fetch())
+
+    assert DownSource.calls == 1
+    assert [p.source_id for p in parks] == ["cached"]
+    assert len(fetcher.failed_tiles) == len(tiles) - 1

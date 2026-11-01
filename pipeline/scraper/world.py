@@ -6,7 +6,11 @@ from dataclasses import asdict
 from pathlib import Path
 
 from pipeline.scraper.sources.base import RawPark
-from pipeline.scraper.sources.osm_overpass import OverpassError, OverpassSource
+from pipeline.scraper.sources.osm_overpass import (
+    OverpassError,
+    OverpassSource,
+    OverpassUnavailable,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +51,7 @@ class WorldFetcher:
         self.cache_dir = cache_dir
         self.source = source or OverpassSource()
         self.failed_tiles: list[tuple[float, float, float, float]] = []
+        self.overpass_unavailable = False
         cache_dir.mkdir(parents=True, exist_ok=True)
 
     async def fetch(self) -> list[RawPark]:
@@ -56,6 +61,14 @@ class WorldFetcher:
             logger.info(f"Tile {index}/{len(tiles)}: {tile}")
             parks.extend(await self._fetch_tile(tile))
         return unique_by_source_id(parks)
+
+    def _cached_parks(self, tile: tuple[float, float, float, float]) -> list[RawPark]:
+        cached = self._read_cache(tile)
+        if cached is not None:
+            return cached
+        if tile[2] - tile[0] <= MIN_TILE_DEGREES:
+            return []
+        return [park for part in split_tile(tile) for park in self._cached_parks(part)]
 
     def _cache_path(self, tile: tuple[float, float, float, float]) -> Path:
         return self.cache_dir / ("_".join(str(value) for value in tile) + ".json")
@@ -71,8 +84,17 @@ class WorldFetcher:
         if cached is not None:
             return cached
 
+        if self.overpass_unavailable:
+            self.failed_tiles.append(tile)
+            return self._cached_parks(tile)
+
         try:
             parks = await self.source.fetch(tile)
+        except OverpassUnavailable:
+            logger.error("Overpass is unavailable; using cached tiles only for the rest of this run")
+            self.overpass_unavailable = True
+            self.failed_tiles.append(tile)
+            return self._cached_parks(tile)
         except OverpassError:
             if tile[2] - tile[0] <= MIN_TILE_DEGREES:
                 logger.error(f"Giving up on tile {tile}")
@@ -82,8 +104,8 @@ class WorldFetcher:
             parks = []
             for part in split_tile(tile):
                 parks.extend(await self._fetch_tile(part))
-        else:
-            await asyncio.sleep(SECONDS_BETWEEN_QUERIES)
+            return parks
 
+        await asyncio.sleep(SECONDS_BETWEEN_QUERIES)
         self._cache_path(tile).write_text(json.dumps([asdict(park) for park in parks]))
         return parks
