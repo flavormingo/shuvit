@@ -26,11 +26,11 @@ pipeline-setup:
 
 # Scrape Houston skateparks (dry run)
 scrape-dry:
-	cd pipeline && .venv/bin/python -m pipeline.scraper.main scrape --source osm --dry-run
+	pipeline/.venv/bin/python -m pipeline.scraper.main scrape --source osm --dry-run
 
 # Scrape Houston skateparks (load into DB)
 scrape:
-	cd pipeline && .venv/bin/python -m pipeline.scraper.main scrape --source osm
+	pipeline/.venv/bin/python -m pipeline.scraper.main scrape --source osm
 
 # Run backend tests
 test:

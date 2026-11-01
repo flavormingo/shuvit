@@ -1,0 +1,7 @@
+[Unit]
+Description=Shuvit nightly backup
+After=postgresql.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/shuvit-backup

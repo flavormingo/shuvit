@@ -8,8 +8,8 @@ Type=exec
 User=shuvit
 Group=shuvit
 WorkingDirectory=/opt/shuvit/backend
-EnvironmentFile=/opt/shuvit/.env
-ExecStart=/opt/shuvit/backend/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4 --log-level info
+EnvironmentFile=/opt/shuvit/backend/.env
+ExecStart=/opt/shuvit/backend/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 2 --proxy-headers --log-level info
 Restart=always
 RestartSec=5
 StandardOutput=journal
@@ -18,7 +18,9 @@ StandardError=journal
 # Security hardening
 NoNewPrivileges=true
 ProtectSystem=strict
-ProtectHome=true
+# tmpfs, not true: asyncpg stats ~/.postgresql and crashes if /home is unreadable.
+ProtectHome=tmpfs
+PrivateTmp=true
 ReadWritePaths=/opt/shuvit/media
 
 [Install]
