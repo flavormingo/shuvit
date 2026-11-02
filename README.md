@@ -46,12 +46,23 @@ Host shuvit-vps
 
 ## Backups
 
-`shuvit-backup.timer` writes the database, media and env file to `/var/backups/shuvit` on the server every night and keeps 14 days. On the Mac, launchd runs `deploy/pull-backup.sh` daily, copied to `~/Library/Application Support/shuvit/`, which pulls them to `~/Backups/shuvit` and keeps 60 days.
+`shuvit-backup.timer` writes the database and env file to `/var/backups/shuvit` on the server every night and keeps 14 days.
+
+On the Mac, launchd runs `deploy/pull-backup.sh` daily, copied to `~/Library/Application Support/shuvit/`. It pulls those files to `~/Backups/shuvit` and keeps 60 days. It also mirrors uploaded media to `~/Backups/shuvit/media`, copying only new files. Files deleted from the server move to `~/Backups/shuvit/media-deleted/<date>` and are removed after 60 days, which is the limit the privacy policy promises.
+
+The Mac holds the only backup of uploaded media, and it only updates when the Mac is on.
 
 Restore a database dump with:
 
 ```sh
 pg_restore -d shuvit --no-owner db-<timestamp>.dump
+```
+
+Restore media with:
+
+```sh
+rsync -a ~/Backups/shuvit/media/ shuvit-vps:/opt/shuvit/media/
+ssh shuvit-vps chown -R shuvit:shuvit /opt/shuvit/media
 ```
 
 ## Things that are easy to break

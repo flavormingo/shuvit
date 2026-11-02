@@ -12,9 +12,6 @@ cd /tmp
 sudo -u postgres pg_dump -Fc shuvit > "$BACKUP_DIR/.db-$STAMP.tmp"
 mv "$BACKUP_DIR/.db-$STAMP.tmp" "$BACKUP_DIR/db-$STAMP.dump"
 
-tar -C /opt/shuvit -czf "$BACKUP_DIR/.media-$STAMP.tmp" media
-mv "$BACKUP_DIR/.media-$STAMP.tmp" "$BACKUP_DIR/media-$STAMP.tar.gz"
-
 cp /opt/shuvit/backend/.env "$BACKUP_DIR/env-$STAMP"
 
 find "$BACKUP_DIR" -type f -mtime +"$KEEP_DAYS" -delete
