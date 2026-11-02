@@ -40,3 +40,29 @@ targets:
           API_BASE_URL: "https://api.shuvit.app"
         Release:
           API_BASE_URL: "https://api.shuvit.app"
+  ShuvitUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: ShuvitUITests
+    dependencies:
+      - target: Shuvit
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: app.shuvit.ios.uitests
+
+schemes:
+  Shuvit:
+    build:
+      targets:
+        Shuvit: all
+        ShuvitUITests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - ShuvitUITests
+    archive:
+      config: Release

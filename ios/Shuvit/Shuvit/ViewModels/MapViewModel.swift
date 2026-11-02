@@ -2,55 +2,85 @@ import CoreLocation
 import MapKit
 import Observation
 
+struct ParkFilters: Equatable {
+    var environment: String?
+    var price: String?
+
+    var isFree: Bool? {
+        switch price {
+        case "free": return true
+        case "paid": return false
+        default: return nil
+        }
+    }
+
+    var activeCount: Int {
+        [environment, price].compactMap { $0 }.count
+    }
+}
+
+struct PlaceResult: Identifiable {
+    let id = UUID()
+    let name: String
+    let subtitle: String
+    let region: MKCoordinateRegion
+}
+
 @Observable
 @MainActor
 final class MapViewModel {
     var parks: [Skatepark] = []
-    var isLoading = false
+    var clusters: [ParkCluster] = []
     var errorMessage: String?
-    private(set) var isShowingSearchResults = false
 
-    private static let fetchLimit = 300
+    var parkResults: [Skatepark] = []
+    var placeResults: [PlaceResult] = []
+    private(set) var isSearching = false
+    private(set) var hasSearched = false
 
-    private var fetchedBounds: Bounds?
-    private var lastFetchWasTruncated = false
+    private static let cellsAcrossScreen = 6.0
+    private static let smallestCell = 0.0001
+
+    private var loadedBounds: Bounds?
+    private var loadedCell: Double?
+    private var loadedFilters: ParkFilters?
     private var fetchTask: Task<Void, Never>?
 
-    func loadVisible(region: MKCoordinateRegion) {
-        guard !isShowingSearchResults else { return }
-
-        let visible = Bounds(region: region)
-        if let fetchedBounds, !lastFetchWasTruncated, fetchedBounds.contains(visible) {
+    func load(region: MKCoordinateRegion, filters: ParkFilters) {
+        let cell = Self.cellSize(for: region)
+        if let loadedBounds, loadedCell == cell, loadedFilters == filters,
+           loadedBounds.contains(Bounds(region: region)) {
             return
         }
 
-        let padded = Bounds(region: region, scale: 1.3)
+        let padded = Bounds(region: region, scale: 1.4)
         fetchTask?.cancel()
         fetchTask = Task {
-            try? await Task.sleep(for: .milliseconds(300))
+            try? await Task.sleep(for: .milliseconds(250))
             guard !Task.isCancelled else { return }
-            await fetchParks(in: padded)
+            await fetch(bounds: padded, cell: cell, filters: filters)
         }
     }
 
-    private func fetchParks(in bounds: Bounds) async {
-        isLoading = true
-        defer { isLoading = false }
-
+    private func fetch(bounds: Bounds, cell: Double, filters: ParkFilters) async {
         do {
-            let results: [Skatepark] = try await APIClient.shared.request(
-                .parksInBounds(
+            let response: ParkMapResponse = try await APIClient.shared.request(
+                .parksMap(
                     south: bounds.south,
                     west: bounds.west,
                     north: bounds.north,
                     east: bounds.east,
-                    limit: Self.fetchLimit
+                    cell: cell,
+                    environment: filters.environment,
+                    isFree: filters.isFree
                 )
             )
-            guard !Task.isCancelled, !isShowingSearchResults else { return }
-            parks = results
-            fetchedBounds = bounds
-            lastFetchWasTruncated = results.count >= Self.fetchLimit
+            guard !Task.isCancelled else { return }
+            parks = response.parks
+            clusters = response.clusters
+            loadedBounds = bounds
+            loadedCell = cell
+            loadedFilters = filters
             errorMessage = nil
         } catch {
             guard !Task.isCancelled else { return }
@@ -58,48 +88,57 @@ final class MapViewModel {
         }
     }
 
-    func search(query: String) async -> MKCoordinateRegion? {
-        fetchTask?.cancel()
-        isLoading = true
-        defer { isLoading = false }
+    func search(query: String) async {
+        isSearching = true
+        defer { isSearching = false }
 
+        async let places = Self.findPlaces(matching: query)
         do {
-            let results: [Skatepark] = try await APIClient.shared.request(.parks(q: query))
-            parks = results
-            isShowingSearchResults = true
-            errorMessage = results.isEmpty ? "No parks found for \"\(query)\"" : nil
-            return Self.regionFitting(results)
+            parkResults = try await APIClient.shared.request(.parks(limit: 20, q: query))
+            errorMessage = nil
         } catch {
+            parkResults = []
             errorMessage = error.localizedDescription
-            return nil
         }
+        placeResults = await places
+        hasSearched = true
     }
 
-    func clearSearch(region: MKCoordinateRegion?) {
-        isShowingSearchResults = false
-        errorMessage = nil
-        fetchedBounds = nil
-        if let region {
-            loadVisible(region: region)
-        }
+    func clearSearch() {
+        parkResults = []
+        placeResults = []
+        hasSearched = false
     }
 
-    private static func regionFitting(_ parks: [Skatepark]) -> MKCoordinateRegion? {
-        guard let first = parks.first else { return nil }
-        var south = first.lat, north = first.lat, west = first.lng, east = first.lng
-        for park in parks {
-            south = min(south, park.lat)
-            north = max(north, park.lat)
-            west = min(west, park.lng)
-            east = max(east, park.lng)
-        }
-        return MKCoordinateRegion(
-            center: CLLocationCoordinate2D(latitude: (south + north) / 2, longitude: (west + east) / 2),
-            span: MKCoordinateSpan(
-                latitudeDelta: min(max((north - south) * 1.4, 0.05), 170),
-                longitudeDelta: min(max((east - west) * 1.4, 0.05), 360)
+    private static func findPlaces(matching query: String) async -> [PlaceResult] {
+        let request = MKLocalSearch.Request()
+        request.naturalLanguageQuery = query
+        request.resultTypes = .address
+
+        guard let response = try? await MKLocalSearch(request: request).start() else { return [] }
+
+        return response.mapItems.prefix(3).map { item in
+            let radius = (item.placemark.region as? CLCircularRegion)?.radius ?? 5000
+            let meters = max(radius * 2.5, 8000)
+            return PlaceResult(
+                name: item.name ?? query,
+                subtitle: item.placemark.title ?? "",
+                region: MKCoordinateRegion(
+                    center: item.placemark.coordinate,
+                    latitudinalMeters: meters,
+                    longitudinalMeters: meters
+                )
             )
-        )
+        }
+    }
+
+    private static func cellSize(for region: MKCoordinateRegion) -> Double {
+        let target = region.span.longitudeDelta / cellsAcrossScreen
+        var cell = 90.0
+        while cell > target && cell > smallestCell {
+            cell /= 2
+        }
+        return cell
     }
 }
 

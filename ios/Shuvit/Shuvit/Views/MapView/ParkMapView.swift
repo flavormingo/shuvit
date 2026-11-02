@@ -9,29 +9,11 @@ struct ParkMapView: View {
     @State private var searchText = ""
     @State private var cameraPosition: MapCameraPosition = .userLocation(fallback: .automatic)
     @State private var showFilters = false
-    @State private var filterType: String?
-    @State private var filterEnvironment: String?
-    @State private var filterPrice: String?
+    @State private var filters = ParkFilters()
     @State private var currentRegion: MKCoordinateRegion?
     @State private var hasSetInitialCamera = false
     @State private var hasCenteredOnUser = false
     @FocusState private var searchFocused: Bool
-
-    private var activeFilterCount: Int {
-        [filterType, filterEnvironment, filterPrice].compactMap { $0 }.count
-    }
-
-    private var filteredParks: [SkateparkNear] {
-        viewModel.parks.filter { park in
-            if let type = filterType, park.parkType?.lowercased() != type { return false }
-            if let env = filterEnvironment, park.environment?.lowercased() != env { return false }
-            if let price = filterPrice {
-                if price == "free" && !park.isFree { return false }
-                if price == "paid" && park.isFree { return false }
-            }
-            return true
-        }
-    }
 
     private let fallbackCenter = CLLocationCoordinate2D(latitude: 29.7604, longitude: -95.3698)
 
@@ -46,11 +28,26 @@ struct ParkMapView: View {
             Map(position: $cameraPosition, selection: $selectedPark) {
                 UserAnnotation()
 
-                ForEach(filteredParks) { park in
+                ForEach(viewModel.parks) { park in
                     Annotation(park.name, coordinate: park.coordinate) {
                         ParkAnnotationView(park: park, isSelected: selectedPark?.id == park.id)
+                            .accessibilityIdentifier("park-pin")
                     }
                     .tag(park)
+                }
+
+                ForEach(viewModel.clusters) { cluster in
+                    Annotation("", coordinate: cluster.coordinate) {
+                        Button {
+                            zoom(into: cluster)
+                        } label: {
+                            ClusterAnnotationView(count: cluster.count)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("park-cluster")
+                        .accessibilityLabel("\(cluster.count) skateparks. Zoom in.")
+                    }
+                    .annotationTitles(.hidden)
                 }
             }
             .mapStyle(.standard(elevation: .flat))
@@ -61,7 +58,7 @@ struct ParkMapView: View {
             }
             .onMapCameraChange(frequency: .onEnd) { context in
                 currentRegion = context.region
-                viewModel.loadVisible(region: context.region)
+                viewModel.load(region: context.region, filters: filters)
             }
 
             VStack(spacing: 0) {
@@ -99,10 +96,14 @@ struct ParkMapView: View {
             else { moveCamera(to: fallbackCenter) }
         }
         .onChange(of: locationManager.location?.latitude) {
-            guard !hasCenteredOnUser, !viewModel.isShowingSearchResults,
-                  let location = locationManager.location else { return }
+            guard !hasCenteredOnUser, let location = locationManager.location else { return }
             hasCenteredOnUser = true
             moveCamera(to: location)
+        }
+        .onChange(of: filters) {
+            if let currentRegion {
+                viewModel.load(region: currentRegion, filters: filters)
+            }
         }
         .animation(.easeInOut(duration: 0.3), value: selectedPark)
     }
@@ -115,34 +116,150 @@ struct ParkMapView: View {
         ))
     }
 
+    private func zoom(into cluster: ParkCluster) {
+        let currentSpan = currentRegion?.span.longitudeDelta ?? 360
+        let fit = max(cluster.north - cluster.south, cluster.east - cluster.west) * 1.6
+        let span = max(min(fit, currentSpan / 2), 0.002)
+        withAnimation {
+            cameraPosition = .region(MKCoordinateRegion(
+                center: CLLocationCoordinate2D(
+                    latitude: (cluster.south + cluster.north) / 2,
+                    longitude: (cluster.west + cluster.east) / 2
+                ),
+                span: MKCoordinateSpan(latitudeDelta: span, longitudeDelta: span)
+            ))
+        }
+    }
+
+    private func show(_ park: Skatepark) {
+        hasCenteredOnUser = true
+        selectedPark = park
+        finishSearch()
+        withAnimation {
+            cameraPosition = .region(MKCoordinateRegion(
+                center: park.coordinate,
+                latitudinalMeters: 1500,
+                longitudinalMeters: 1500
+            ))
+        }
+    }
+
+    private func show(_ place: PlaceResult) {
+        hasCenteredOnUser = true
+        selectedPark = nil
+        finishSearch()
+        withAnimation {
+            cameraPosition = .region(place.region)
+        }
+    }
+
+    private func finishSearch() {
+        searchFocused = false
+        viewModel.clearSearch()
+    }
+
+    private var searchResults: some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 0) {
+                if viewModel.parkResults.isEmpty && viewModel.placeResults.isEmpty {
+                    Text("No parks or places found")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .padding(16)
+                }
+
+                if !viewModel.placeResults.isEmpty {
+                    resultsHeader("Places")
+                    ForEach(viewModel.placeResults) { place in
+                        resultRow(icon: "mappin.circle.fill", title: place.name, subtitle: place.subtitle) {
+                            show(place)
+                        }
+                    }
+                }
+
+                if !viewModel.parkResults.isEmpty {
+                    resultsHeader("Parks")
+                    ForEach(viewModel.parkResults) { park in
+                        resultRow(icon: "figure.skateboarding", title: park.name, subtitle: park.locationString) {
+                            show(park)
+                        }
+                    }
+                }
+            }
+        }
+        .frame(maxHeight: 320)
+        .accessibilityIdentifier("search-results")
+    }
+
+    private func resultsHeader(_ title: String) -> some View {
+        Text(title.uppercased())
+            .font(.system(size: 11, weight: .semibold))
+            .foregroundStyle(.tertiary)
+            .kerning(0.8)
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
+            .padding(.bottom, 4)
+    }
+
+    private func resultRow(icon: String, title: String, subtitle: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: icon)
+                    .foregroundStyle(.secondary)
+                    .frame(width: 22)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.subheadline.weight(.semibold))
+                        .lineLimit(1)
+                    if !subtitle.isEmpty {
+                        Text(subtitle)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                }
+
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
     private var searchBar: some View {
         VStack(spacing: 0) {
+            if viewModel.hasSearched {
+                searchResults
+
+                Rectangle()
+                    .fill(Color.primary.opacity(0.08))
+                    .frame(height: 1)
+            }
+
             HStack(spacing: 12) {
                 Image(systemName: "magnifyingglass")
                     .font(.body.weight(.medium))
                     .foregroundStyle(.secondary)
 
-                TextField("Find a skatepark", text: $searchText)
+                TextField("Find a park or place", text: $searchText)
                     .textFieldStyle(.plain)
                     .font(.body)
                     .focused($searchFocused)
                     .onSubmit {
                         let query = searchText.trimmingCharacters(in: .whitespaces)
                         guard !query.isEmpty else { return }
-                        Task {
-                            if let region = await viewModel.search(query: query) {
-                                withAnimation {
-                                    cameraPosition = .region(region)
-                                }
-                            }
-                        }
+                        Task { await viewModel.search(query: query) }
                     }
 
-                if !searchText.isEmpty {
+                if viewModel.isSearching {
+                    ProgressView()
+                } else if !searchText.isEmpty {
                     Button {
                         searchText = ""
-                        selectedPark = nil
-                        viewModel.clearSearch(region: currentRegion)
+                        finishSearch()
                     } label: {
                         Image(systemName: "xmark.circle.fill")
                             .font(.body)
@@ -159,15 +276,15 @@ struct ParkMapView: View {
                     ZStack(alignment: .topTrailing) {
                         Image(systemName: "slider.horizontal.3")
                             .font(.body.weight(.medium))
-                            .foregroundStyle(showFilters || activeFilterCount > 0 ? Color(.systemBackground) : .secondary)
+                            .foregroundStyle(showFilters || filters.activeCount > 0 ? Color(.systemBackground) : .secondary)
                             .frame(width: 36, height: 36)
                             .background(
-                                showFilters || activeFilterCount > 0 ? Color.primary : Color(.systemGray5),
+                                showFilters || filters.activeCount > 0 ? Color.primary : Color(.systemGray5),
                                 in: RoundedRectangle(cornerRadius: 10)
                             )
 
-                        if activeFilterCount > 0 && !showFilters {
-                            Text("\(activeFilterCount)")
+                        if filters.activeCount > 0 && !showFilters {
+                            Text("\(filters.activeCount)")
                                 .font(.system(size: 10, weight: .bold))
                                 .foregroundStyle(.white)
                                 .frame(width: 16, height: 16)
@@ -176,6 +293,8 @@ struct ParkMapView: View {
                         }
                     }
                 }
+                .accessibilityIdentifier("filter-toggle")
+                .accessibilityLabel("Filters")
             }
             .padding(.leading, 16)
             .padding(.trailing, 10)
@@ -188,16 +307,13 @@ struct ParkMapView: View {
                         .frame(height: 1)
 
                     VStack(alignment: .leading, spacing: 14) {
-                        filterRow(title: "Setting", options: ["Indoor", "Outdoor", "Both"], selection: $filterEnvironment)
-                        filterRow(title: "Type", options: ["Street", "Transition", "Mixed", "DIY"], selection: $filterType)
-                        filterRow(title: "Price", options: ["Free", "Paid"], selection: $filterPrice)
+                        filterRow(title: "Setting", options: ["Indoor", "Outdoor", "Both"], selection: $filters.environment)
+                        filterRow(title: "Price", options: ["Free", "Paid"], selection: $filters.price)
 
-                        if activeFilterCount > 0 {
+                        if filters.activeCount > 0 {
                             Button {
                                 withAnimation(.easeInOut(duration: 0.2)) {
-                                    filterType = nil
-                                    filterEnvironment = nil
-                                    filterPrice = nil
+                                    filters = ParkFilters()
                                 }
                             } label: {
                                 Text("Clear all")
@@ -323,6 +439,34 @@ struct ParkMapView: View {
         .padding(.bottom, 16)
     }
 
+}
+
+struct ClusterAnnotationView: View {
+    let count: Int
+
+    private var diameter: CGFloat {
+        switch count {
+        case ..<10: return 34
+        case ..<100: return 40
+        case ..<1000: return 48
+        default: return 56
+        }
+    }
+
+    private var label: String {
+        count < 1000 ? "\(count)" : String(format: "%.1fk", Double(count) / 1000)
+    }
+
+    var body: some View {
+        Text(label)
+            .font(.system(size: 13, weight: .bold, design: .rounded))
+            .foregroundStyle(.white)
+            .frame(width: diameter, height: diameter)
+            .background(Color.black, in: Circle())
+            .overlay(Circle().stroke(.white.opacity(0.9), lineWidth: 2))
+            .shadow(color: .black.opacity(0.3), radius: 4, y: 2)
+            .contentShape(Circle())
+    }
 }
 
 struct ParkAnnotationView: View {

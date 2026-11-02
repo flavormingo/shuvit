@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import asyncio
 import logging
-from pathlib import Path
 
 import typer
 from rich.console import Console
@@ -14,10 +13,10 @@ from pipeline.scraper.geocode import (
     fill_missing_names,
     reverse_geocode_parks,
 )
-from pipeline.scraper.loader import load_parks
+from pipeline.scraper.loader import load_parks, prune_parks
 from pipeline.scraper.sources.google_places import GooglePlacesSource
 from pipeline.scraper.sources.osm_overpass import HOUSTON_BBOX, OverpassSource
-from pipeline.scraper.world import WorldFetcher
+from pipeline.scraper.sources.qlever import QleverSource
 
 app = typer.Typer(help="Shuvit skatepark data pipeline")
 console = Console()
@@ -50,30 +49,27 @@ def parse_bbox(bbox: str | None) -> tuple[float, float, float, float]:
 def scrape(
     source: str = typer.Option("osm", help="Source: osm, google, all"),
     bbox: str = typer.Option(None, help="Bounding box: south,west,north,east"),
-    world: bool = typer.Option(False, help="Fetch OSM parks for the whole world"),
+    world: bool = typer.Option(False, help="Replace all OSM parks with a fresh worldwide fetch"),
     geocoder: str = typer.Option("offline", help="offline, or nominatim for small areas only"),
-    cache_dir: Path = typer.Option(Path("/tmp/shuvit-tiles"), help="Resumable tile cache for --world"),
     database_url: str = typer.Option(None, envvar="DATABASE_URL"),
     dry_run: bool = typer.Option(False, help="Fetch and dedup only, don't load"),
     verbose: bool = typer.Option(False, "-v", "--verbose"),
 ):
     """Scrape skatepark data and load it into the database."""
     setup_logging(verbose)
-    asyncio.run(_scrape(source, parse_bbox(bbox), world, geocoder, cache_dir, database_url, dry_run))
+    asyncio.run(_scrape(source, parse_bbox(bbox), world, geocoder, database_url, dry_run))
 
 
-async def _scrape(source, bbox, world, geocoder, cache_dir, database_url, dry_run):
+async def _scrape(source, bbox, world, geocoder, database_url, dry_run):
     all_parks = []
 
-    if source in ("osm", "all"):
-        if world:
-            fetcher = WorldFetcher(cache_dir)
-            parks = await fetcher.fetch()
-            if fetcher.failed_tiles:
-                console.print(f"[red]Failed tiles, rerun to retry: {fetcher.failed_tiles}[/red]")
-        else:
-            parks = await OverpassSource().fetch(bbox)
-        console.print(f"OSM: {len(parks)} parks found")
+    if world:
+        parks = await QleverSource().fetch_world()
+        console.print(f"QLever: {len(parks)} parks found")
+        all_parks.extend(parks)
+    elif source in ("osm", "all"):
+        parks = await OverpassSource().fetch(bbox)
+        console.print(f"Overpass: {len(parks)} parks found")
         all_parks.extend(parks)
 
     if source in ("google", "all"):
@@ -101,6 +97,10 @@ async def _scrape(source, bbox, world, geocoder, cache_dir, database_url, dry_ru
 
     count = await load_parks(deduped, database_url)
     console.print(f"[green]Loaded {count} skateparks.[/green]")
+
+    if world:
+        removed = await prune_parks({park.source_id for park in deduped}, database_url)
+        console.print(f"[green]Removed {removed} parks no longer in the data.[/green]")
 
 
 def print_summary(parks):

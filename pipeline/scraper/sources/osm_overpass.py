@@ -15,6 +15,7 @@ RETRY_ATTEMPTS = 3
 SKATEBOARD_SPORT = '"sport"~"(^|;)skateboard(;|$)"'
 NON_PARK_TAGS = ("shop", "office", "craft", "club")
 NON_PARK_NAME = re.compile(r"(skate|board)\s*shop\b", re.IGNORECASE)
+PUMP_TRACK_NAME = re.compile(r"pump\s*-?\s*track", re.IGNORECASE)
 
 
 class OverpassError(Exception):
@@ -39,8 +40,20 @@ def build_query(bbox: tuple[float, float, float, float]) -> str:
     """
 
 
+def is_pump_track(tags: dict) -> bool:
+    if tags.get("cycling") == "pump_track":
+        return True
+    sports = tags.get("sport", "").split(";")
+    if tags.get("leisure") == "track" and ("cycling" in sports or "bmx" in sports):
+        return True
+    name = tags.get("name", "")
+    return bool(PUMP_TRACK_NAME.search(name)) and "skate" not in name.lower()
+
+
 def is_park(tags: dict) -> bool:
     if any(tag in tags for tag in NON_PARK_TAGS):
+        return False
+    if is_pump_track(tags):
         return False
     return not NON_PARK_NAME.search(tags.get("name", ""))
 

@@ -38,6 +38,27 @@ struct Skatepark: Codable, Identifiable, Hashable {
 
 typealias SkateparkNear = Skatepark
 
+struct ParkCluster: Codable, Identifiable {
+    let count: Int
+    let lat: Double
+    let lng: Double
+    let south: Double
+    let north: Double
+    let west: Double
+    let east: Double
+
+    var id: String { "\(lat),\(lng),\(count)" }
+
+    var coordinate: CLLocationCoordinate2D {
+        CLLocationCoordinate2D(latitude: lat, longitude: lng)
+    }
+}
+
+struct ParkMapResponse: Codable {
+    let clusters: [ParkCluster]
+    let parks: [Skatepark]
+}
+
 struct SkateparkDetail: Codable, Identifiable {
     let id: UUID
     let name: String

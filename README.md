@@ -24,8 +24,12 @@ make backend
 Run the pipeline from the repo root, so that `pipeline` is importable:
 
 ```sh
-pipeline/.venv/bin/python -m pipeline.scraper.main scrape --source osm --dry-run
+pipeline/.venv/bin/python -m pipeline.scraper.main scrape --world --dry-run
 ```
+
+`--world` fetches every park on the planet from [QLever](https://qlever.dev) in two queries, loads them, then removes OSM parks that are no longer in the data. It runs monthly from `shuvit-pipeline.timer`. For a small area, `--bbox south,west,north,east` uses Overpass instead.
+
+Run iOS UI tests against production with `xcodebuild test -project ios/Shuvit/Shuvit.xcodeproj -scheme Shuvit -destination 'platform=iOS Simulator,name=<device>'`.
 
 ## Deploying
 

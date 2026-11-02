@@ -42,17 +42,16 @@ class ParkDetail(ParkOut):
     media: list = Field(default_factory=list)
 
 
-class ParkNearQuery(BaseModel):
-    lat: float = Field(ge=-90, le=90)
-    lng: float = Field(ge=-180, le=180)
-    radius_km: float = Field(default=25, ge=0.1, le=200)
-    limit: int = Field(default=50, ge=1, le=200)
+class ParkCluster(BaseModel):
+    count: int
+    lat: float
+    lng: float
+    south: float
+    north: float
+    west: float
+    east: float
 
 
-class ParkListQuery(BaseModel):
-    page: int = Field(default=1, ge=1)
-    limit: int = Field(default=50, ge=1, le=200)
-    city: str | None = None
-    state: str | None = None
-    park_type: str | None = None
-    q: str | None = None
+class ParkMapOut(BaseModel):
+    clusters: list[ParkCluster]
+    parks: list[ParkOut]

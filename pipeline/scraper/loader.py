@@ -44,6 +44,17 @@ UPSERT_SQL = """
 """
 
 
+MIN_KEEP_FRACTION = 0.8
+
+PRUNE_SQL = """
+    DELETE FROM skateparks
+    WHERE source = 'osm'
+      AND source_id <> ALL($1::text[])
+      AND NOT EXISTS (SELECT 1 FROM favorites WHERE favorites.park_id = skateparks.id)
+      AND NOT EXISTS (SELECT 1 FROM media_submissions WHERE media_submissions.park_id = skateparks.id)
+"""
+
+
 def slugify(name: str, city: str | None = None, source_id: str = "") -> str:
     text = "-".join(part for part in (name, city) if part).lower()
     text = re.sub(r"[^\w\s-]", "", text)
@@ -95,13 +106,29 @@ def upsert_values(park: RawPark) -> tuple:
     )
 
 
-async def load_parks(parks: list[RawPark], database_url: str | None = None) -> int:
+def _connection_url(database_url: str | None) -> str:
     db_url = database_url or os.environ.get(
         "DATABASE_URL", "postgresql://shuvit:shuvit@localhost:5432/shuvit"
     )
-    db_url = db_url.replace("postgresql+asyncpg://", "postgresql://")
+    return db_url.replace("postgresql+asyncpg://", "postgresql://")
 
-    conn = await asyncpg.connect(db_url)
+
+async def prune_parks(keep_source_ids: set[str], database_url: str | None = None) -> int:
+    conn = await asyncpg.connect(_connection_url(database_url))
+    try:
+        existing = await conn.fetchval("SELECT count(*) FROM skateparks WHERE source = 'osm'")
+        if len(keep_source_ids) < existing * MIN_KEEP_FRACTION:
+            raise ValueError(
+                f"Refusing to prune: fetched {len(keep_source_ids)} parks but {existing} exist"
+            )
+        result = await conn.execute(PRUNE_SQL, list(keep_source_ids))
+    finally:
+        await conn.close()
+    return int(result.split()[-1])
+
+
+async def load_parks(parks: list[RawPark], database_url: str | None = None) -> int:
+    conn = await asyncpg.connect(_connection_url(database_url))
     logger.info(f"Loading {len(parks)} parks into database")
 
     count = 0

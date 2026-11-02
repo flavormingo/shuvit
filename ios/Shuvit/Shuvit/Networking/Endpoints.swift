@@ -59,17 +59,25 @@ extension Endpoint {
         )
     }
 
-    static func parksInBounds(south: Double, west: Double, north: Double, east: Double, limit: Int) -> Endpoint {
-        Endpoint(
-            path: "/parks/bounds",
-            queryItems: [
-                URLQueryItem(name: "south", value: "\(south)"),
-                URLQueryItem(name: "west", value: "\(west)"),
-                URLQueryItem(name: "north", value: "\(north)"),
-                URLQueryItem(name: "east", value: "\(east)"),
-                URLQueryItem(name: "limit", value: "\(limit)"),
-            ]
-        )
+    static func parksMap(
+        south: Double,
+        west: Double,
+        north: Double,
+        east: Double,
+        cell: Double,
+        environment: String?,
+        isFree: Bool?
+    ) -> Endpoint {
+        var items = [
+            URLQueryItem(name: "south", value: "\(south)"),
+            URLQueryItem(name: "west", value: "\(west)"),
+            URLQueryItem(name: "north", value: "\(north)"),
+            URLQueryItem(name: "east", value: "\(east)"),
+            URLQueryItem(name: "cell", value: "\(cell)"),
+        ]
+        if let environment { items.append(URLQueryItem(name: "environment", value: environment)) }
+        if let isFree { items.append(URLQueryItem(name: "is_free", value: "\(isFree)")) }
+        return Endpoint(path: "/parks/map", queryItems: items)
     }
 
     static func parkDetail(id: UUID) -> Endpoint {

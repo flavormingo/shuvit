@@ -1,10 +1,13 @@
 import uuid
 
 from geoalchemy2.functions import ST_Distance, ST_DWithin, ST_SetSRID, ST_MakePoint, ST_X, ST_Y
-from sqlalchemy import func, select, or_
+from sqlalchemy import case, func, select, or_, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.skatepark import Skatepark
+
+MIN_CELL_DEGREES = 0.0001
+MAX_CELLS_ACROSS = 40
 
 
 async def list_parks(
@@ -45,18 +48,31 @@ async def list_parks(
     if park_type:
         query = query.where(Skatepark.park_type == park_type)
         count_query = count_query.where(Skatepark.park_type == park_type)
+    ordering = [Skatepark.name]
     if q:
-        pattern = f"%{q}%"
-        query = query.where(
-            or_(Skatepark.name.ilike(pattern), Skatepark.address.ilike(pattern))
+        escaped = q.strip().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        pattern = f"%{escaped}%"
+        matches = or_(
+            Skatepark.name.ilike(pattern, escape="\\"),
+            Skatepark.city.ilike(pattern, escape="\\"),
+            Skatepark.state.ilike(pattern, escape="\\"),
+            Skatepark.address.ilike(pattern, escape="\\"),
         )
-        count_query = count_query.where(
-            or_(Skatepark.name.ilike(pattern), Skatepark.address.ilike(pattern))
-        )
+        query = query.where(matches)
+        count_query = count_query.where(matches)
+        ordering = [
+            case((Skatepark.name.like("Skatepark in %"), 1), else_=0),
+            case(
+                (Skatepark.name.ilike(f"{escaped}%", escape="\\"), 0),
+                (Skatepark.name.ilike(pattern, escape="\\"), 1),
+                else_=2,
+            ),
+            Skatepark.name,
+        ]
 
     total = (await db.execute(count_query)).scalar() or 0
 
-    query = query.order_by(Skatepark.name).offset((page - 1) * limit).limit(limit)
+    query = query.order_by(*ordering).offset((page - 1) * limit).limit(limit)
     rows = (await db.execute(query)).all()
 
     parks = [
@@ -89,8 +105,6 @@ async def get_nearby(
     radius_km: float = 25,
     limit: int = 50,
 ) -> list[dict]:
-    from sqlalchemy import text
-
     radius_m = radius_km * 1000
 
     query = text("""
@@ -134,40 +148,89 @@ async def get_nearby(
     ]
 
 
-async def get_in_bounds(
+async def get_map_items(
     db: AsyncSession,
     south: float,
     west: float,
     north: float,
     east: float,
-    limit: int = 300,
-) -> list[dict]:
-    """Parks inside a map viewport. The best-documented parks win when there are too many."""
-    from sqlalchemy import text
-
+    cell: float,
+    environment: str | None = None,
+    is_free: bool | None = None,
+) -> dict:
     boxes = [(west, east)] if west <= east else [(west, 180.0), (-180.0, east)]
-    condition = " OR ".join(
-        f"geom && ST_MakeEnvelope(:w{i}, :south, :e{i}, :north, 4326)" for i in range(len(boxes))
-    )
-    params: dict = {"south": south, "north": north, "limit": limit}
+    width = sum(box_east - box_west for box_west, box_east in boxes)
+    params: dict = {
+        "south": south,
+        "north": north,
+        "cell": max(cell, width / MAX_CELLS_ACROSS, MIN_CELL_DEGREES),
+    }
+
+    box_conditions = []
     for i, (box_west, box_east) in enumerate(boxes):
+        box_conditions.append(f"geom && ST_MakeEnvelope(:w{i}, :south, :e{i}, :north, 4326)")
         params[f"w{i}"] = box_west
         params[f"e{i}"] = box_east
 
-    query = text(f"""
-        SELECT
-            id, name, slug,
-            ST_Y(geom) as lat,
-            ST_X(geom) as lng,
-            city, state, country, park_type, environment, rating, difficulty,
-            is_free, hero_image_url, verified
-        FROM skateparks
-        WHERE {condition}
-        ORDER BY data_quality_score DESC NULLS LAST, id
-        LIMIT :limit
-    """)
-    rows = (await db.execute(query, params)).mappings().all()
-    return [dict(row) for row in rows]
+    conditions = [f"({' OR '.join(box_conditions)})"]
+    if environment:
+        conditions.append("environment = :environment")
+        params["environment"] = environment
+    if is_free is not None:
+        conditions.append("is_free = :is_free")
+        params["is_free"] = is_free
+
+    cells = (
+        await db.execute(
+            text(f"""
+                SELECT
+                    count(*) AS count,
+                    avg(ST_Y(geom)) AS lat,
+                    avg(ST_X(geom)) AS lng,
+                    min(ST_Y(geom)) AS south,
+                    max(ST_Y(geom)) AS north,
+                    min(ST_X(geom)) AS west,
+                    max(ST_X(geom)) AS east,
+                    (array_agg(id))[1] AS first_id
+                FROM skateparks
+                WHERE {' AND '.join(conditions)}
+                GROUP BY floor(ST_X(geom) / :cell), floor(ST_Y(geom) / :cell)
+            """),
+            params,
+        )
+    ).mappings().all()
+
+    clusters = [
+        {key: row[key] for key in ("count", "lat", "lng", "south", "north", "west", "east")}
+        for row in cells
+        if row["count"] > 1
+    ]
+
+    single_ids = [row["first_id"] for row in cells if row["count"] == 1]
+    parks = []
+    if single_ids:
+        rows = await db.execute(
+            select(
+                Skatepark.id,
+                Skatepark.name,
+                Skatepark.slug,
+                ST_Y(Skatepark.geom).label("lat"),
+                ST_X(Skatepark.geom).label("lng"),
+                Skatepark.city,
+                Skatepark.state,
+                Skatepark.country,
+                Skatepark.park_type,
+                Skatepark.environment,
+                Skatepark.rating,
+                Skatepark.difficulty,
+                Skatepark.is_free,
+                Skatepark.hero_image_url,
+                Skatepark.verified,
+            ).where(Skatepark.id.in_(single_ids))
+        )
+        parks = [dict(row) for row in rows.mappings().all()]
+
+    return {"clusters": clusters, "parks": parks}
 
 
 async def get_park(db: AsyncSession, park_id: uuid.UUID) -> dict | None:

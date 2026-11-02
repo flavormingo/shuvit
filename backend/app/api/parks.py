@@ -1,4 +1,5 @@
 import uuid
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -6,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_current_user_optional
 from app.database import get_db
 from app.models.user import User
-from app.schemas.park import ParkDetail, ParkListQuery, ParkNearOut, ParkNearQuery, ParkOut
+from app.schemas.park import ParkDetail, ParkMapOut, ParkNearOut, ParkOut
 from app.services import park_service
 from app.services.media_service import get_approved_media
 
@@ -40,17 +41,26 @@ async def parks_near(
     return await park_service.get_nearby(db, lat=lat, lng=lng, radius_km=radius_km, limit=limit)
 
 
-@router.get("/bounds", response_model=list[ParkOut])
-async def parks_in_bounds(
+@router.get("/map", response_model=ParkMapOut)
+async def parks_for_map(
     south: float = Query(ge=-90, le=90),
     west: float = Query(ge=-180, le=180),
     north: float = Query(ge=-90, le=90),
     east: float = Query(ge=-180, le=180),
-    limit: int = Query(300, ge=1, le=500),
+    cell: float = Query(gt=0, le=90),
+    environment: Literal["indoor", "outdoor", "both"] | None = None,
+    is_free: bool | None = None,
     db: AsyncSession = Depends(get_db),
 ):
-    return await park_service.get_in_bounds(
-        db, south=south, west=west, north=north, east=east, limit=limit
+    return await park_service.get_map_items(
+        db,
+        south=south,
+        west=west,
+        north=north,
+        east=east,
+        cell=cell,
+        environment=environment,
+        is_free=is_free,
     )
 
 

@@ -9,7 +9,7 @@ from pipeline.scraper.sources.osm_overpass import (
     element_to_park,
     is_park,
 )
-from pipeline.scraper.world import split_tile, unique_by_source_id, world_tiles
+from pipeline.scraper.sources.qlever import build_elements, wkt_center
 
 
 def element(tags, type_="way", id_=1):
@@ -131,21 +131,6 @@ def test_oversized_values_are_clipped():
     assert len(values[0]) == 255 and len(values[4]) == 128 and len(values[7]) == 16 and len(values[13]) == 64
 
 
-def test_world_tiles_cover_the_globe():
-    tiles = world_tiles()
-    assert min(t[1] for t in tiles) == -180 and max(t[3] for t in tiles) == 180
-    assert max(t[2] for t in tiles) == 84
-
-
-def test_split_tile_covers_original():
-    parts = split_tile((0, 0, 30, 30))
-    assert len(parts) == 4 and (0, 0, 15.0, 15.0) in parts and (15.0, 15.0, 30, 30) in parts
-
-
-def test_border_duplicates_are_removed_by_source_id():
-    assert len(unique_by_source_id([park(source_id="same"), park(source_id="same")])) == 1
-
-
 def test_cli_exposes_scrape_subcommand():
     from typer.testing import CliRunner
 
@@ -161,64 +146,66 @@ def test_named_parks_score_above_generated_names():
     assert compute_quality_score(park("Real Park")) > compute_quality_score(park("Skatepark in Paris"))
 
 
-def test_failed_tile_is_retried_on_next_run(tmp_path):
-    import asyncio
-
-    from pipeline.scraper import world
-    from pipeline.scraper.sources.osm_overpass import OverpassError
-
-    class FlakySource:
-        def __init__(self):
-            self.healthy = False
-            self.calls = []
-
-        async def fetch(self, tile):
-            self.calls.append(tile)
-            if not self.healthy:
-                raise OverpassError("down")
-            return [park(source_id=str(tile))]
-
-    world.SECONDS_BETWEEN_QUERIES = 0
-    source = FlakySource()
-    tile = (0, 0, 7.5, 7.5)
-
-    first = world.WorldFetcher(tmp_path, source)
-    assert asyncio.run(first._fetch_tile(tile)) == []
-    assert len(first.failed_tiles) == 4
-
-    source.healthy = True
-    second = world.WorldFetcher(tmp_path, source)
-    assert asyncio.run(second._fetch_tile(tile))
-    assert second.failed_tiles == []
-
-
-def test_unavailable_overpass_stops_queries_but_keeps_cached_tiles(tmp_path):
-    import asyncio
-    import json
-
-    from pipeline.scraper.world import WorldFetcher, world_tiles
-    from pipeline.scraper.sources.osm_overpass import OverpassUnavailable
-
-    class DownSource:
-        calls = 0
-
-        async def fetch(self, tile):
-            DownSource.calls += 1
-            raise OverpassUnavailable("refused")
-
-    tiles = world_tiles()
-    fetcher = WorldFetcher(tmp_path, DownSource())
-    from dataclasses import asdict
-
-    fetcher._cache_path(tiles[1]).write_text(json.dumps([asdict(park(source_id="cached"))]))
-
-    parks = asyncio.run(fetcher.fetch())
-
-    assert DownSource.calls == 1
-    assert [p.source_id for p in parks] == ["cached"]
-    assert len(fetcher.failed_tiles) == len(tiles) - 1
-
-
 def test_skateboard_shop_name_is_rejected():
     assert not is_park({"name": "Overcast Skateboard Shop", "sport": "skateboard"})
     assert is_park({"name": "Workshop Skatepark", "leisure": "skatepark"})
+
+
+def test_pump_tracks_are_rejected():
+    assert not is_park({"leisure": "track", "sport": "cycling;bmx;skateboard"})
+    assert not is_park({"leisure": "track", "sport": "bmx;skateboard"})
+    assert not is_park({"cycling": "pump_track", "leisure": "pitch", "sport": "skateboard"})
+    assert not is_park({"name": "Pumptrack Friedrichshain", "leisure": "pitch", "sport": "skateboard"})
+
+
+def test_real_parks_near_pump_track_rules_are_kept():
+    assert is_park({"leisure": "pitch", "sport": "skateboard;bmx"})
+    assert is_park({"leisure": "track", "sport": "skateboard"})
+    assert is_park({"name": "Skatepark & Pumptrack Ost", "leisure": "pitch", "sport": "skateboard"})
+
+
+def test_unnamed_standard_park_is_kept():
+    assert element_to_park(element({"leisure": "pitch", "sport": "skateboard"})) is not None
+
+
+def test_wkt_center_handles_points_and_polygons():
+    assert wkt_center("POINT(17.5 43.25)") == {"lat": 43.25, "lon": 17.5}
+    assert wkt_center("POLYGON((0 0,4 0,4 2,0 2,0 0))") == {"lat": 1.0, "lon": 2.0}
+    assert wkt_center("MULTIPOLYGON(((-10 -10,-8 -10,-8 -8,-10 -8,-10 -10)))") == {"lat": -9.0, "lon": -9.0}
+    assert wkt_center("GEOMETRYCOLLECTION EMPTY") is None
+
+
+def test_build_elements_joins_tags_and_geometry():
+    way = "https://www.openstreetmap.org/way/7"
+    key = "https://www.openstreetmap.org/wiki/Key:"
+    tags = [
+        {"park": {"value": way}, "key": {"value": key + "leisure"}, "value": {"value": "pitch"}},
+        {"park": {"value": way}, "key": {"value": key + "addr:street"}, "value": {"value": "Main"}},
+    ]
+    geometry = [
+        {"park": {"value": way}, "wkt": {"value": "POLYGON((0 0,2 0,2 2,0 0))"}},
+        {"park": {"value": "https://www.openstreetmap.org/way/8"}, "wkt": {"value": "POINT(1 1)"}},
+    ]
+    assert build_elements(tags, geometry) == [
+        {
+            "type": "way",
+            "id": 7,
+            "center": {"lat": 1.0, "lon": 1.0},
+            "tags": {"leisure": "pitch", "addr:street": "Main"},
+        }
+    ]
+
+
+def test_empty_qlever_result_raises_instead_of_looking_like_success():
+    import asyncio
+
+    import pytest
+
+    from pipeline.scraper.sources.qlever import QleverError, QleverSource
+
+    class EmptySource(QleverSource):
+        async def _query(self, client, query):
+            return []
+
+    with pytest.raises(QleverError):
+        asyncio.run(EmptySource().fetch_world())

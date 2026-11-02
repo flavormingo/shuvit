@@ -25,6 +25,7 @@
 		58367E2835972040619173D3 /* ShuvitApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52B1BC46455EDC2CE57F0EDB /* ShuvitApp.swift */; };
 		590B361E44C0C0E3EE5C0A26 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 16D919E89E424DC1AD81C9E0 /* Assets.xcassets */; };
 		5AE60222E3140FF010932818 /* UserSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39D8FAE50085FE94DCCFDB86 /* UserSettings.swift */; };
+		5F9DB5EBC55A525332AF50F6 /* MapFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E738A4F2532392A9A43A3323 /* MapFlowTests.swift */; };
 		63FFF5E0BEB53BD5A667C94C /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 3E246B3722AE25367D7303AC /* PrivacyInfo.xcprivacy */; };
 		6435D53A80B0056ADBBAF1D1 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A47A4638935305574CF179B /* ProfileView.swift */; };
 		79D57AE060A7E648A171F83E /* FlowLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EB50871DC0768887C4DD721 /* FlowLayout.swift */; };
@@ -39,6 +40,16 @@
 		F5DB15EF968AA4768AE694CE /* AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 421F0253C09757086DAA4EE5 /* AuthManager.swift */; };
 		F889C56E08CACC813DDA0CF8 /* FavoritesListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBE1000D0F581033CDE67035 /* FavoritesListView.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		25CC4BCD1712F72C72C8D00F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 75FAA2EA75543DBFA3EF452A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CC272952A9EFABCD72C3FA0E;
+			remoteInfo = Shuvit;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		10BC682052C878DF654766DF /* ReviewQueueView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewQueueView.swift; sourceTree = "<group>"; };
@@ -64,6 +75,7 @@
 		80B1FB8019D1731CBE1E6D3A /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
 		8368AED476FF4AC767C21A8C /* ParkPill.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParkPill.swift; sourceTree = "<group>"; };
 		83FFBEE08E9FD823F2E80507 /* KeychainHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainHelper.swift; sourceTree = "<group>"; };
+		8E5EA6F5C361A470FB3ED9B3 /* ShuvitUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = ShuvitUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		8ECAC8911A2AC27EF2DC71ED /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		9911E62D4384A2C386D5048D /* NameSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NameSetupView.swift; sourceTree = "<group>"; };
 		A5432FCBDA85EBD17E3B6892 /* AuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViewModel.swift; sourceTree = "<group>"; };
@@ -72,6 +84,7 @@
 		CEA83E55927C256697C55524 /* MapViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapViewModel.swift; sourceTree = "<group>"; };
 		D62257B357DEAC052B67F6EB /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfig.swift; sourceTree = "<group>"; };
 		E6C4AF7D88173F66C95F0931 /* ParkDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParkDetailViewModel.swift; sourceTree = "<group>"; };
+		E738A4F2532392A9A43A3323 /* MapFlowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapFlowTests.swift; sourceTree = "<group>"; };
 		F8E00E5D71BB86625EA038C7 /* FavoritesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoritesViewModel.swift; sourceTree = "<group>"; };
 		F8F81A58911DF47E022D7D67 /* Shuvit.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Shuvit.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -102,6 +115,7 @@
 			isa = PBXGroup;
 			children = (
 				F8F81A58911DF47E022D7D67 /* Shuvit.app */,
+				8E5EA6F5C361A470FB3ED9B3 /* ShuvitUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -137,6 +151,7 @@
 			isa = PBXGroup;
 			children = (
 				D31A1DF084F1BB126F0BD26C /* Shuvit */,
+				EC280B299B7757A8FA7DF245 /* ShuvitUITests */,
 				4159CA5AEC7680E57D6573CC /* Products */,
 			);
 			sourceTree = "<group>";
@@ -212,6 +227,14 @@
 			path = Auth;
 			sourceTree = "<group>";
 		};
+		EC280B299B7757A8FA7DF245 /* ShuvitUITests */ = {
+			isa = PBXGroup;
+			children = (
+				E738A4F2532392A9A43A3323 /* MapFlowTests.swift */,
+			);
+			path = ShuvitUITests;
+			sourceTree = "<group>";
+		};
 		F19B4DD104705396EE46359C /* Views */ = {
 			isa = PBXGroup;
 			children = (
@@ -239,6 +262,24 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		9A852B8E0F90BE4587E912C4 /* ShuvitUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7FE0EDC71C94080724BE7E59 /* Build configuration list for PBXNativeTarget "ShuvitUITests" */;
+			buildPhases = (
+				81D5C2D195C8C608F4A049D9 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A9838A95688ADA911F979061 /* PBXTargetDependency */,
+			);
+			name = ShuvitUITests;
+			packageProductDependencies = (
+			);
+			productName = ShuvitUITests;
+			productReference = 8E5EA6F5C361A470FB3ED9B3 /* ShuvitUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 		CC272952A9EFABCD72C3FA0E /* Shuvit */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = C74CD01CC6C5AF1813D0FD2B /* Build configuration list for PBXNativeTarget "Shuvit" */;
@@ -266,6 +307,9 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1540;
 				TargetAttributes = {
+					9A852B8E0F90BE4587E912C4 = {
+						TestTargetID = CC272952A9EFABCD72C3FA0E;
+					};
 					CC272952A9EFABCD72C3FA0E = {
 						ProvisioningStyle = Automatic;
 					};
@@ -286,6 +330,7 @@
 			projectRoot = "";
 			targets = (
 				CC272952A9EFABCD72C3FA0E /* Shuvit */,
+				9A852B8E0F90BE4587E912C4 /* ShuvitUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -339,9 +384,59 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		81D5C2D195C8C608F4A049D9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5F9DB5EBC55A525332AF50F6 /* MapFlowTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		A9838A95688ADA911F979061 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CC272952A9EFABCD72C3FA0E /* Shuvit */;
+			targetProxy = 25CC4BCD1712F72C72C8D00F /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		6849938FFEE4F608DD089242 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = app.shuvit.ios.uitests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = Shuvit;
+			};
+			name = Debug;
+		};
+		6A7D43ADB93CC6C9D0D9E38A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = app.shuvit.ios.uitests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = Shuvit;
+			};
+			name = Release;
+		};
 		B03FD2AFBFA881E16BFFD68F /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -522,6 +617,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		7FE0EDC71C94080724BE7E59 /* Build configuration list for PBXNativeTarget "ShuvitUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6849938FFEE4F608DD089242 /* Debug */,
+				6A7D43ADB93CC6C9D0D9E38A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		C3A85E77E61881D1146296A1 /* Build configuration list for PBXProject "Shuvit" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
